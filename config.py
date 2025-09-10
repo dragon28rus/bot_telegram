@@ -13,3 +13,6 @@ WEBHOOK_PATH = config('WEBHOOK_PATH')
 
 # Chat ID технической поддержки
 SUPPORT_CHAT_ID = config('SUPPORT_CHAT_ID', cast=int)
+
+# Токен для авторизации биллинг API
+BILLING_API_TOKEN = config('BILLING_API_TOKEN')
