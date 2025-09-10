@@ -36,4 +36,10 @@ class ContextualLogger(logging.LoggerAdapter):
 logger = ContextualLogger(logging.getLogger(), chat_id='unknown')
 
 def set_chat_id(chat_id):
+    """
+    Устанавливает chat_id для текущего контекста логирования.
+    
+    Args:
+        chat_id: Telegram chat_id для записи в лог
+    """
     logger.set_chat_id(chat_id)

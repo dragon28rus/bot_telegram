@@ -2,6 +2,12 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 def get_main_keyboard():
+    """
+    Создаёт основную клавиатуру с командами для пользователя.
+    
+    Returns:
+        ReplyKeyboardMarkup: Объект клавиатуры
+    """
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(KeyboardButton('Узнать баланс'))
     keyboard.add(KeyboardButton('Узнать новости'))
@@ -11,4 +17,3 @@ def get_main_keyboard():
     keyboard.add(KeyboardButton('Позвонить на абонентский отдел'))
     keyboard.add(KeyboardButton('Отвязать договор'))
     return keyboard
-

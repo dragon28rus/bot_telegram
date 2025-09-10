@@ -9,6 +9,16 @@ from logger import logger, set_chat_id
 REQUEST_TIMEOUT = 5
 
 def authenticate(contract_number, password, chat_id='unknown'):
+    """
+    Аутентифицирует пользователя в BGBilling.
+    
+    Args:
+        contract_number: Номер договора
+        password: Пароль
+        chat_id: Telegram chat_id для логирования
+    Returns:
+        dict or None: Результат аутентификации или None в случае ошибки
+    """
     set_chat_id(chat_id)
     try:
         response = requests.get(
@@ -31,6 +41,15 @@ def authenticate(contract_number, password, chat_id='unknown'):
         raise
 
 def save_chat_id(contract_id, chat_id):
+    """
+    Сохраняет chat_id в параметрах договора в BGBilling.
+    
+    Args:
+        contract_id: ID договора
+        chat_id: Telegram chat_id
+    Returns:
+        bool: True если успешно, False в случае ошибки
+    """
     set_chat_id(chat_id)
     try:
         response = requests.get(
@@ -71,6 +90,15 @@ def save_chat_id(contract_id, chat_id):
         raise
 
 def get_balance(contract_id, chat_id='unknown'):
+    """
+    Получает баланс договора из BGBilling.
+    
+    Args:
+        contract_id: ID договора
+        chat_id: Telegram chat_id для логирования
+    Returns:
+        dict or None: Данные о балансе или None в случае ошибки
+    """
     set_chat_id(chat_id)
     try:
         response = requests.get(
@@ -93,6 +121,15 @@ def get_balance(contract_id, chat_id='unknown'):
         raise
 
 def get_tariff_cost(contract_id, chat_id='unknown'):
+    """
+    Получает информацию о тарифе договора из BGBilling.
+    
+    Args:
+        contract_id: ID договора
+        chat_id: Telegram chat_id для логирования
+    Returns:
+        dict or None: Данные о тарифе или None в случае ошибки
+    """
     set_chat_id(chat_id)
     try:
         response = requests.get(
@@ -115,6 +152,15 @@ def get_tariff_cost(contract_id, chat_id='unknown'):
         raise
 
 def get_news(contract_id, chat_id='unknown'):
+    """
+    Получает последние новости для договора из BGBilling.
+    
+    Args:
+        contract_id: ID договора
+        chat_id: Telegram chat_id для логирования
+    Returns:
+        dict or None: Данные новостей или None в случае ошибки
+    """
     set_chat_id(chat_id)
     try:
         response = requests.get(
@@ -137,6 +183,15 @@ def get_news(contract_id, chat_id='unknown'):
         raise
 
 def get_last_payments(contract_id, chat_id='unknown'):
+    """
+    Получает последние платежи по договору из BGBilling.
+    
+    Args:
+        contract_id: ID договора
+        chat_id: Telegram chat_id для логирования
+    Returns:
+        dict or None: Данные о платежах или None в случае ошибки
+    """
     set_chat_id(chat_id)
     try:
         response = requests.get(
