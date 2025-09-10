@@ -8,6 +8,7 @@ __pycache__/
 
 # DB
 *.db
+cable_bot.db
 
 # Distribution / packaging
 .Python
@@ -142,7 +143,6 @@ celerybeat.pid
 .env
 .envrc
 .venv
-env/
 venv/
 ENV/
 env.bak/
