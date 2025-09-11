@@ -23,13 +23,13 @@ async def on_shutdown(bot: Bot, app: web.Application):
     set_chat_id('system')
     try:
         await bot.delete_webhook()
+        await bot.close()  # Закрываем бот асинхронно
         if 'aiohttp_session' in app:
             await app['aiohttp_session'].close()
-            logger.info("Webhook deleted and aiohttp session closed")
+        logger.info("Webhook deleted, bot closed, and aiohttp session closed")
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
     finally:
-        # Гарантировать закрытие всех соединений
         await asyncio.sleep(0.1)  # Дать время на завершение операций
 
 def main():
@@ -59,9 +59,6 @@ def main():
     except Exception as e:
         logger.error(f"Main loop error: {e}")
         raise
-    finally:
-        # Гарантировать закрытие бота
-        asyncio.get_event_loop().run_until_complete(bot.close())
 
 if __name__ == '__main__':
     main()

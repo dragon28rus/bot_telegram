@@ -1,45 +1,48 @@
-#### logger.py
 import logging
+import os
+from datetime import datetime
 
-# Кастомный форматтер для обработки отсутствия chat_id
-class CustomFormatter(logging.Formatter):
-    def format(self, record):
-        if not hasattr(record, 'chat_id'):
-            record.chat_id = 'unknown'
-        return super().format(record)
+# Путь к файлу логов
+LOG_DIR = '/opt/cable_bot'
+LOG_FILE = os.path.join(LOG_DIR, 'cable_bot.log')
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    filename='cable_bot.log',
-    format='%(asctime)s - %(levelname)s - chat_id:%(chat_id)s - %(message)s'
-)
+# Создание директории для логов, если она не существует
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
 
-# Применяем кастомный форматтер
-handler = logging.FileHandler('cable_bot.log')
-handler.setFormatter(CustomFormatter('%(asctime)s - %(levelname)s - chat_id:%(chat_id)s - %(message)s'))
-logging.getLogger().handlers = [handler]
+# Настройка логгера
+logger = logging.getLogger('cable_bot')
+logger.setLevel(logging.INFO)
 
-# Добавляем chat_id в контекст логирования
-class ContextualLogger(logging.LoggerAdapter):
-    def __init__(self, logger, chat_id='unknown'):
-        super().__init__(logger, {})
-        self.chat_id = chat_id
+# Форматтер для логов
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - chat_id:%(chat_id)s - %(message)s')
 
-    def process(self, msg, kwargs):
-        kwargs['extra'] = {'chat_id': self.chat_id}
-        return msg, kwargs
+# Файловый обработчик
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
 
-    def set_chat_id(self, chat_id):
-        self.chat_id = str(chat_id) if chat_id else 'unknown'
+# Консольный обработчик
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
 
-logger = ContextualLogger(logging.getLogger(), chat_id='unknown')
+# Добавление обработчиков к логгеру
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# Хранилище для chat_id
+_chat_id = 'unknown'
 
 def set_chat_id(chat_id):
-    """
-    Устанавливает chat_id для текущего контекста логирования.
-    
-    Args:
-        chat_id: Telegram chat_id для записи в лог
-    """
-    logger.set_chat_id(chat_id)
+    """Устанавливает chat_id для логирования."""
+    global _chat_id
+    _chat_id = str(chat_id)
+
+# Переопределение метода логирования для добавления chat_id
+class ChatIDFilter(logging.Filter):
+    def filter(self, record):
+        record.chat_id = _chat_id
+        return True
+
+logger.addFilter(ChatIDFilter())
