@@ -12,7 +12,7 @@ async def on_startup(bot: Bot, webhook_url: str, app: web.Application):
     set_chat_id('system')
     try:
         init_db()
-        await bot.set_webhook(webhook_url)
+        await bot.set_webhook(webhook_url, drop_pending_updates=True)
         logger.info("Webhook set and DB initialized")
         app['aiohttp_session'] = ClientSession()
     except Exception as e:
@@ -22,15 +22,15 @@ async def on_startup(bot: Bot, webhook_url: str, app: web.Application):
 async def on_shutdown(bot: Bot, app: web.Application):
     set_chat_id('system')
     try:
-        await bot.delete_webhook()
-        await bot.close()  # Закрываем бот асинхронно
-        if 'aiohttp_session' in app:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await bot.close()
+        if 'aiohttp_session' in app and not app['aiohttp_session'].closed:
             await app['aiohttp_session'].close()
         logger.info("Webhook deleted, bot closed, and aiohttp session closed")
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
     finally:
-        await asyncio.sleep(0.1)  # Дать время на завершение операций
+        await asyncio.sleep(0.25)  # Увеличена задержка для завершения операций
 
 def main():
     set_chat_id('system')

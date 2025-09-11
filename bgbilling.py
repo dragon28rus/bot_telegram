@@ -41,6 +41,8 @@ async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
     except Exception as e:
         logger.error(f'Unexpected error checking contract {contract_id}: {e}')
         return False
+    finally:
+        await asyncio.sleep(0.01)  # Минимальная задержка для завершения операций
 
 async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -75,6 +77,8 @@ async def authenticate(contract_number: str, password: str, chat_id: str = 'unkn
     except Exception as e:
         logger.error(f'Unexpected error in authentication: {e}')
         return None
+    finally:
+        await asyncio.sleep(0.01)
 
 async def save_chat_id(contract_id: str, chat_id: str) -> bool:
     """
@@ -123,6 +127,8 @@ async def save_chat_id(contract_id: str, chat_id: str) -> bool:
     except Exception as e:
         logger.error(f'Unexpected error saving chat_id: {e}')
         return False
+    finally:
+        await asyncio.sleep(0.01)
 
 async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -156,6 +162,8 @@ async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict,
     except Exception as e:
         logger.error(f'Unexpected error getting balance: {e}')
         return None
+    finally:
+        await asyncio.sleep(0.01)
 
 async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -189,6 +197,8 @@ async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[d
     except Exception as e:
         logger.error(f'Unexpected error getting tariff: {e}')
         return None
+    finally:
+        await asyncio.sleep(0.01)
 
 async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -222,6 +232,8 @@ async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, No
     except Exception as e:
         logger.error(f'Unexpected error getting news: {e}')
         return None
+    finally:
+        await asyncio.sleep(0.01)
 
 async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -255,3 +267,5 @@ async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union
     except Exception as e:
         logger.error(f'Unexpected error getting payments: {e}')
         return None
+    finally:
+        await asyncio.sleep(0.01)
