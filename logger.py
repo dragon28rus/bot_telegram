@@ -21,7 +21,10 @@ class ChatIdFilter(logging.Filter):
     Кастомный фильтр для добавления chat_id из contextvars в каждую запись лога.
     """
     def filter(self, record: logging.LogRecord) -> bool:
-        record.chat_id = _current_chat_id.get()
+        try:
+            record.chat_id = _current_chat_id.get()
+        except LookupError:
+            record.chat_id = "unknown"
         return True
 
 # --- Настройка логов ---
