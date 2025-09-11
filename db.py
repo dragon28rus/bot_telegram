@@ -1,4 +1,5 @@
 import aiosqlite
+import os
 from logger import logger
 from config import DB_PATH
 from typing import Optional, Dict, Any, List, Union
