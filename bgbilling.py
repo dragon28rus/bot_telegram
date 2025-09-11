@@ -1,4 +1,3 @@
-### bgbilling.py
 import logging
 import requests
 from requests.exceptions import Timeout, RequestException
@@ -7,6 +6,43 @@ from logger import logger, set_chat_id
 
 # Таймаут для всех запросов (в секундах)
 REQUEST_TIMEOUT = 5
+
+def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
+    """
+    Проверяет существование договора в BGBilling по contract_id.
+    
+    Args:
+        contract_id: Номер договора для проверки.
+        chat_id: Telegram chat_id для логирования.
+    Returns:
+        bool: True, если договор существует, False в противном случае.
+    """
+    set_chat_id(chat_id)
+    try:
+        response = requests.get(
+            f'{BGBILLING_API_URL}/jsonWebApi/contract',
+            params={'contractId': contract_id},
+            auth=BGBILLING_AUTH,
+            timeout=REQUEST_TIMEOUT
+        )
+        if response.status_code == 200:
+            data = response.json()
+            # Предполагается, что API возвращает данные о договоре, если он существует
+            if data.get('exists', False):
+                logger.info(f'Contract {contract_id} exists')
+                return True
+            else:
+                logger.warning(f'Contract {contract_id} not found')
+                return False
+        else:
+            logger.error(f'Error checking contract {contract_id}: HTTP {response.status_code}')
+            return False
+    except Timeout:
+        logger.error(f'Timeout checking contract {contract_id}')
+        raise
+    except RequestException as e:
+        logger.error(f'Error checking contract {contract_id}: {e}')
+        raise
 
 def authenticate(contract_number, password, chat_id='unknown'):
     """
