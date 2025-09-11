@@ -16,7 +16,12 @@ CREATE TABLE IF NOT EXISTS users (
 async def init_users_table() -> None:
     """
     Создает таблицу users, если она не существует.
+    Также гарантирует, что директория для базы создана.
     """
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(CREATE_TABLE_SQL)
         await db.commit()
