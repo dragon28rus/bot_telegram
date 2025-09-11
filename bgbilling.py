@@ -34,10 +34,13 @@ async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
                     return False
     except aiohttp.ClientTimeout:
         logger.error(f'Timeout checking contract {contract_id}')
-        raise
+        return False
     except ClientError as e:
         logger.error(f'Error checking contract {contract_id}: {e}')
-        raise
+        return False
+    except Exception as e:
+        logger.error(f'Unexpected error checking contract {contract_id}: {e}')
+        return False
 
 async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -65,10 +68,13 @@ async def authenticate(contract_number: str, password: str, chat_id: str = 'unkn
                     return None
     except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API')
-        raise
+        return None
     except ClientError as e:
         logger.error(f'Error connecting to BGBilling API: {e}')
-        raise
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected error in authentication: {e}')
+        return None
 
 async def save_chat_id(contract_id: str, chat_id: str) -> bool:
     """
@@ -110,10 +116,13 @@ async def save_chat_id(contract_id: str, chat_id: str) -> bool:
                     return False
     except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for saving chat_id')
-        raise
+        return False
     except ClientError as e:
         logger.error(f'Error saving chat_id to BGBilling: {e}')
-        raise
+        return False
+    except Exception as e:
+        logger.error(f'Unexpected error saving chat_id: {e}')
+        return False
 
 async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -140,10 +149,13 @@ async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict,
                     return None
     except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for balance')
-        raise
+        return None
     except ClientError as e:
         logger.error(f'Error getting balance from BGBilling: {e}')
-        raise
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected error getting balance: {e}')
+        return None
 
 async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -170,10 +182,13 @@ async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[d
                     return None
     except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for tariff')
-        raise
+        return None
     except ClientError as e:
         logger.error(f'Error getting tariff from BGBilling: {e}')
-        raise
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected error getting tariff: {e}')
+        return None
 
 async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -200,10 +215,13 @@ async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, No
                     return None
     except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for news')
-        raise
+        return None
     except ClientError as e:
         logger.error(f'Error getting news from BGBilling: {e}')
-        raise
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected error getting news: {e}')
+        return None
 
 async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
@@ -230,7 +248,10 @@ async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union
                     return None
     except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for payments')
-        raise
+        return None
     except ClientError as e:
         logger.error(f'Error getting payments from BGBilling: {e}')
-        raise
+        return None
+    except Exception as e:
+        logger.error(f'Unexpected error getting payments: {e}')
+        return None
