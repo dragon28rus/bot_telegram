@@ -1,272 +1,96 @@
-import aiohttp
+from aiohttp import web
 import asyncio
-from aiohttp import ClientTimeout, ClientError
-from typing import Union
-from config import BGBILLING_API_URL, BGBILLING_AUTH
+
+from db import get_chat_id_by_contract_id, get_all_chat_ids
 from logger import logger, set_chat_id
+from config import BILLING_API_TOKEN
 
-# Timeout for all requests (in seconds)
-REQUEST_TIMEOUT = 5
 
-async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
-    """
-    Checks if a contract exists in BGBilling by contract_id.
-    
-    Args:
-        contract_id: Contract number to check.
-        chat_id: Telegram chat_id for logging.
-    Returns:
-        bool: True if contract exists, False otherwise.
-    """
-    set_chat_id(chat_id)
-    try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(f'{BGBILLING_API_URL}/jsonWebApi/contract', params={'contractId': contract_id}) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if data.get('exists', False):
-                        logger.info(f'Contract {contract_id} exists')
-                        return True
-                    else:
-                        logger.warning(f'Contract {contract_id} not found')
-                        return False
-                else:
-                    logger.error(f'Error checking contract {contract_id}: HTTP {response.status}')
-                    return False
-    except aiohttp.ClientTimeout:
-        logger.error(f'Timeout checking contract {contract_id}')
+def _check_auth(request):
+    """Check Authorization header for billing API."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or auth_header != f"Bearer {BILLING_API_TOKEN}":
+        logger.error("Unauthorized billing notification attempt")
         return False
-    except ClientError as e:
-        logger.error(f'Error checking contract {contract_id}: {e}')
-        return False
-    except Exception as e:
-        logger.error(f'Unexpected error checking contract {contract_id}: {e}')
-        return False
-    finally:
-        await asyncio.sleep(0.05)  # Increased delay for cleanup
+    return True
 
-async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> Union[dict, None]:
-    """
-    Authenticates a user in BGBilling.
-    
-    Args:
-        contract_number: Contract number
-        password: Password
-        chat_id: Telegram chat_id for logging
-    Returns:
-        Union[dict, None]: Authentication result or None on error
-    """
-    set_chat_id(chat_id)
-    try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(
-                f'{BGBILLING_API_URL}/jsonWebApi/login',
-                params={'login': contract_number, 'password': password, 'midAuth': 0}
-            ) as response:
-                if response.status == 200:
-                    logger.info('Authentication request sent')
-                    return await response.json()
-                else:
-                    logger.error(f'Authentication failed with status {response.status}')
-                    return None
-    except aiohttp.ClientTimeout:
-        logger.error('Timeout connecting to BGBilling API')
-        return None
-    except ClientError as e:
-        logger.error(f'Error connecting to BGBilling API: {e}')
-        return None
-    except Exception as e:
-        logger.error(f'Unexpected error in authentication: {e}')
-        return None
-    finally:
-        await asyncio.sleep(0.05)
 
-async def save_chat_id(contract_id: str, chat_id: str) -> bool:
+async def handle_billing_notification(request, bot):
     """
-    Saves chat_id to contract parameters in BGBilling.
-    
-    Args:
-        contract_id: Contract ID
-        chat_id: Telegram chat_id
-    Returns:
-        bool: True if successful, False on error
+    Обрабатывает уведомления от биллинга для конкретного пользователя по contract_id.
+    Требует авторизацию через заголовок Authorization: Bearer <token>.
     """
-    set_chat_id(chat_id)
-    try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(
-                f'{BGBILLING_API_URL}/jsonWebApi/contractParameters',
-                params={'contractId': contract_id}
-            ) as response:
-                if response.status != 200:
-                    logger.error(f'Failed to get contract parameters: {response.status}')
-                    return False
-                params = (await response.json()).get('contractParameters', [])
-                chat_id_param = next((p for p in params if p['title'] == 'chat_id'), None)
-            
-            async with session.post(
-                f'{BGBILLING_API_URL}/jsonWebApi/updateContractParameter',
-                json={
-                    'contractId': contract_id,
-                    'paramId': chat_id_param['id'] if chat_id_param else '100',
-                    'value': str(chat_id),
-                    'typeId': '1'
-                }
-            ) as update_response:
-                if update_response.status == 200:
-                    logger.info('Chat ID saved successfully')
-                    return True
-                else:
-                    logger.error(f'Failed to update chat_id: {update_response.status}')
-                    return False
-    except aiohttp.ClientTimeout:
-        logger.error('Timeout connecting to BGBilling API for saving chat_id')
-        return False
-    except ClientError as e:
-        logger.error(f'Error saving chat_id to BGBilling: {e}')
-        return False
-    except Exception as e:
-        logger.error(f'Unexpected error saving chat_id: {e}')
-        return False
-    finally:
-        await asyncio.sleep(0.05)
+    set_chat_id("system")
 
-async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
-    """
-    Retrieves contract balance from BGBilling.
-    
-    Args:
-        contract_id: Contract ID
-        chat_id: Telegram chat_id for logging
-    Returns:
-        Union[dict, None]: Balance data or None on error
-    """
-    set_chat_id(chat_id)
-    try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(
-                f'{BGBILLING_API_URL}/jsonWebApi/contractBalance',
-                params={'contractId': contract_id}
-            ) as response:
-                if response.status == 200:
-                    logger.info('Balance request sent')
-                    return await response.json()
-                else:
-                    logger.error(f'Failed to get balance: {response.status}')
-                    return None
-    except aiohttp.ClientTimeout:
-        logger.error('Timeout connecting to BGBilling API for balance')
-        return None
-    except ClientError as e:
-        logger.error(f'Error getting balance from BGBilling: {e}')
-        return None
-    except Exception as e:
-        logger.error(f'Unexpected error getting balance: {e}')
-        return None
-    finally:
-        await asyncio.sleep(0.05)
+    if not _check_auth(request):
+        return web.json_response({"status": "error", "message": "Unauthorized"}, status=401)
 
-async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
-    """
-    Retrieves tariff information for a contract from BGBilling.
-    
-    Args:
-        contract_id: Contract ID
-        chat_id: Telegram chat_id for logging
-    Returns:
-        Union[dict, None]: Tariff data or None on error
-    """
-    set_chat_id(chat_id)
     try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(
-                f'{BGBILLING_API_URL}/jsonWebApi/contractTarifPlans',
-                params={'contractId': contract_id}
-            ) as response:
-                if response.status == 200:
-                    logger.info('Tariff request sent')
-                    return await response.json()
-                else:
-                    logger.error(f'Failed to get tariff: {response.status}')
-                    return None
-    except aiohttp.ClientTimeout:
-        logger.error('Timeout connecting to BGBilling API for tariff')
-        return None
-    except ClientError as e:
-        logger.error(f'Error getting tariff from BGBilling: {e}')
-        return None
-    except Exception as e:
-        logger.error(f'Unexpected error getting tariff: {e}')
-        return None
-    finally:
-        await asyncio.sleep(0.05)
+        data = await request.json()
+        contract_id = data.get("contract_id")
+        message = data.get("message")
 
-async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
-    """
-    Retrieves recent news for a contract from BGBilling.
-    
-    Args:
-        contract_id: Contract ID
-        chat_id: Telegram chat_id for logging
-    Returns:
-        Union[dict, None]: News data or None on error
-    """
-    set_chat_id(chat_id)
-    try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(
-                f'{BGBILLING_API_URL}/jsonWebApi/newsList',
-                params={'contractId': contract_id}
-            ) as response:
-                if response.status == 200:
-                    logger.info('News request sent')
-                    return await response.json()
-                else:
-                    logger.error(f'Failed to get news: {response.status}')
-                    return None
-    except aiohttp.ClientTimeout:
-        logger.error('Timeout connecting to BGBilling API for news')
-        return None
-    except ClientError as e:
-        logger.error(f'Error getting news from BGBilling: {e}')
-        return None
-    except Exception as e:
-        logger.error(f'Unexpected error getting news: {e}')
-        return None
-    finally:
-        await asyncio.sleep(0.05)
+        if not contract_id or not message:
+            logger.error("Invalid billing notification: missing contract_id or message")
+            return web.json_response(
+                {"status": "error", "message": "Missing contract_id or message"}, status=400
+            )
 
-async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
-    """
-    Retrieves recent payments for a contract from BGBilling.
-    
-    Args:
-        contract_id: Contract ID
-        chat_id: Telegram chat_id for logging
-    Returns:
-        Union[dict, None]: Payment data or None on error
-    """
-    set_chat_id(chat_id)
-    try:
-        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
-            async with session.get(
-                f'{BGBILLING_API_URL}/jsonWebApi/lastContractPayments',
-                params={'contractId': contract_id, 'members': 1, 'lastPayments': 3}
-            ) as response:
-                if response.status == 200:
-                    logger.info('Payments request sent')
-                    return await response.json()
-                else:
-                    logger.error(f'Failed to get payments: {response.status}')
-                    return None
-    except aiohttp.ClientTimeout:
-        logger.error('Timeout connecting to BGBilling API for payments')
-        return None
-    except ClientError as e:
-        logger.error(f'Error getting payments from BGBilling: {e}')
-        return None
+        chat_id = await get_chat_id_by_contract_id(contract_id)
+        if chat_id:
+            set_chat_id(chat_id)
+            await bot.send_message(chat_id, f"Уведомление от биллинга: {message}")
+            logger.info("Billing notification sent to user")
+            return web.json_response({"status": "ok"})
+        else:
+            logger.warning("No chat_id found for contract_id")
+            return web.json_response(
+                {"status": "error", "message": "No user found for contract_id"}, status=404
+            )
     except Exception as e:
-        logger.error(f'Unexpected error getting payments: {e}')
-        return None
-    finally:
-        await asyncio.sleep(0.05)
+        logger.error(f"Error processing billing notification: {e}")
+        return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+
+async def handle_broadcast_notification(request, bot):
+    """
+    Обрабатывает уведомления от биллинга для отправки всем подписчикам.
+    Требует авторизацию через заголовок Authorization: Bearer <token>.
+    """
+    set_chat_id("system")
+
+    if not _check_auth(request):
+        return web.json_response({"status": "error", "message": "Unauthorized"}, status=401)
+
+    try:
+        data = await request.json()
+        message = data.get("message")
+        if not message:
+            logger.error("Invalid broadcast notification: missing message")
+            return web.json_response(
+                {"status": "error", "message": "Missing message"}, status=400
+            )
+
+        chat_ids = await get_all_chat_ids()
+        if not chat_ids:
+            logger.warning("No subscribers found for broadcast")
+            return web.json_response(
+                {"status": "error", "message": "No subscribers found"}, status=404
+            )
+
+        async def _send(chat_id):
+            try:
+                set_chat_id(chat_id)
+                await bot.send_message(chat_id, f"Уведомление от биллинга: {message}")
+                logger.info(f"Broadcast notification sent to user with chat_id: {chat_id}")
+            except Exception as e:
+                logger.error(f"Error sending broadcast to user with chat_id {chat_id}: {e}")
+
+        await asyncio.gather(*[_send(chat_id) for chat_id in chat_ids])
+
+        set_chat_id("system")
+        logger.info("Broadcast notification sent to all subscribers")
+        return web.json_response({"status": "ok"})
+    except Exception as e:
+        logger.error(f"Error processing broadcast notification: {e}")
+        return web.json_response({"status": "error", "message": str(e)}, status=500)
