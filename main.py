@@ -1,11 +1,14 @@
 import asyncio
+import signal
+import sys
 from aiohttp import web
+
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from config import BOT_TOKEN, WEBHOOK_URL, WEBHOOK_PATH
 from logger import logger, set_chat_id
 from handlers import (
     auth_router,
-    billing_router,
     check_router,
     support_router,
     user_router,
@@ -13,10 +16,15 @@ from handlers import (
     handle_broadcast_notification,
 )
 
+def shutdown_handler(sig, frame):
+    print("Bot stopped by user")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, shutdown_handler)
+signal.signal(signal.SIGTERM, shutdown_handler)
 
 def register_handlers(dp: Dispatcher):
     dp.include_router(auth_router)
-    dp.include_router(billing_router)
     dp.include_router(check_router)
     dp.include_router(support_router)
     dp.include_router(user_router)
@@ -69,13 +77,25 @@ async def on_shutdown(bot: Bot, app: web.Application):
 
 
 async def init_app():
-    bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode="HTML")
+    )
     dp = Dispatcher()
     register_handlers(dp)
 
     app = web.Application()
 
-    app.router.add_post(WEBHOOK_PATH, lambda request: dp.feed_webhook_update(bot, request))
+    async def telegram_webhook(request):
+        try:
+            data = await request.json()
+        except Exception:
+            return web.Response(status=400, text="Invalid request")
+
+        await dp.feed_webhook_update(bot, data)
+        return web.Response(status=200, text="ok")
+
+    app.router.add_post(WEBHOOK_PATH, telegram_webhook)
     app.router.add_post("/billing", lambda request: handle_billing_notification(request, bot))
     app.router.add_post("/broadcast", lambda request: handle_broadcast_notification(request, bot))
 
@@ -89,7 +109,7 @@ async def main():
     app = await init_app()
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    site = web.TCPSite(runner, "0.0.0.0", 8443)
     await site.start()
     logger.info("Bot started")
 
