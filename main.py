@@ -5,19 +5,21 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from config import BOT_TOKEN, WEBHOOK_URL, WEBHOOK_PATH
 from handlers import register_handlers, handle_billing_notification, handle_broadcast_notification
 from logger import logger, set_chat_id
-from aiohttp import web
+from aiohttp import web, ClientSession
 from db import init_db
 
-async def on_startup(bot: Bot, webhook_url: str):
+async def on_startup(bot: Bot, webhook_url: str, app: web.Application):
     set_chat_id('system')
     init_db()
     await bot.set_webhook(webhook_url)
     logger.info("Webhook set and DB initialized")
+    app['aiohttp_session'] = ClientSession()
 
-async def on_shutdown(bot: Bot):
+async def on_shutdown(bot: Bot, app: web.Application):
     set_chat_id('system')
     await bot.delete_webhook()
-    logger.info("Webhook deleted")
+    await app['aiohttp_session'].close()
+    logger.info("Webhook deleted and aiohttp session closed")
 
 def main():
     set_chat_id('system')
@@ -37,8 +39,8 @@ def main():
     webhook_handler.register(app, path=WEBHOOK_PATH)
     setup_application(app, dp, bot=bot)
     
-    app.on_startup.append(lambda _: on_startup(bot, WEBHOOK_URL + WEBHOOK_PATH))
-    app.on_shutdown.append(lambda _: on_shutdown(bot))
+    app.on_startup.append(lambda app: on_startup(bot, WEBHOOK_URL + WEBHOOK_PATH, app))
+    app.on_shutdown.append(lambda app: on_shutdown(bot, app))
     
     logger.info("Starting bot")
     web.run_app(app, host='0.0.0.0', port=8444)

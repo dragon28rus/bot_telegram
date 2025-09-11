@@ -1,13 +1,12 @@
-import logging
-import requests
-from requests.exceptions import Timeout, RequestException
+import aiohttp
+from aiohttp import ClientTimeout, ClientError
 from config import BGBILLING_API_URL, BGBILLING_AUTH
 from logger import logger, set_chat_id
 
 # Таймаут для всех запросов (в секундах)
 REQUEST_TIMEOUT = 5
 
-def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
+async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
     """
     Проверяет существование договора в BGBilling по contract_id.
     
@@ -19,32 +18,27 @@ def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/contract',
-            params={'contractId': contract_id},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            data = response.json()
-            # Предполагается, что API возвращает данные о договоре, если он существует
-            if data.get('exists', False):
-                logger.info(f'Contract {contract_id} exists')
-                return True
-            else:
-                logger.warning(f'Contract {contract_id} not found')
-                return False
-        else:
-            logger.error(f'Error checking contract {contract_id}: HTTP {response.status_code}')
-            return False
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(f'{BGBILLING_API_URL}/jsonWebApi/contract', params={'contractId': contract_id}) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get('exists', False):
+                        logger.info(f'Contract {contract_id} exists')
+                        return True
+                    else:
+                        logger.warning(f'Contract {contract_id} not found')
+                        return False
+                else:
+                    logger.error(f'Error checking contract {contract_id}: HTTP {response.status}')
+                    return False
+    except aiohttp.ClientTimeout:
         logger.error(f'Timeout checking contract {contract_id}')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error checking contract {contract_id}: {e}')
         raise
 
-def authenticate(contract_number, password, chat_id='unknown'):
+async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> dict | None:
     """
     Аутентифицирует пользователя в BGBilling.
     
@@ -57,26 +51,25 @@ def authenticate(contract_number, password, chat_id='unknown'):
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/login',
-            params={'login': contract_number, 'password': password, 'midAuth': 0},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            logger.info('Authentication request sent')
-            return response.json()
-        else:
-            logger.error(f'Authentication failed with status {response.status_code}')
-            return None
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(
+                f'{BGBILLING_API_URL}/jsonWebApi/login',
+                params={'login': contract_number, 'password': password, 'midAuth': 0}
+            ) as response:
+                if response.status == 200:
+                    logger.info('Authentication request sent')
+                    return await response.json()
+                else:
+                    logger.error(f'Authentication failed with status {response.status}')
+                    return None
+    except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error connecting to BGBilling API: {e}')
         raise
 
-def save_chat_id(contract_id, chat_id):
+async def save_chat_id(contract_id: str, chat_id: str) -> bool:
     """
     Сохраняет chat_id в параметрах договора в BGBilling.
     
@@ -88,44 +81,40 @@ def save_chat_id(contract_id, chat_id):
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/contractParameters',
-            params={'contractId': contract_id},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code != 200:
-            logger.error(f'Failed to get contract parameters: {response.status_code}')
-            return False
-
-        params = response.json().get('contractParameters', [])
-        chat_id_param = next((p for p in params if p['title'] == 'chat_id'), None)
-        
-        update_response = requests.post(
-            f'{BGBILLING_API_URL}/jsonWebApi/updateContractParameter',
-            auth=BGBILLING_AUTH,
-            json={
-                'contractId': contract_id,
-                'paramId': chat_id_param['id'] if chat_id_param else '100',
-                'value': str(chat_id),
-                'typeId': '1'
-            },
-            timeout=REQUEST_TIMEOUT
-        )
-        if update_response.status_code == 200:
-            logger.info('Chat ID saved successfully')
-            return True
-        else:
-            logger.error(f'Failed to update chat_id: {update_response.status_code}')
-            return False
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(
+                f'{BGBILLING_API_URL}/jsonWebApi/contractParameters',
+                params={'contractId': contract_id}
+            ) as response:
+                if response.status != 200:
+                    logger.error(f'Failed to get contract parameters: {response.status}')
+                    return False
+                params = (await response.json()).get('contractParameters', [])
+                chat_id_param = next((p for p in params if p['title'] == 'chat_id'), None)
+            
+            async with session.post(
+                f'{BGBILLING_API_URL}/jsonWebApi/updateContractParameter',
+                json={
+                    'contractId': contract_id,
+                    'paramId': chat_id_param['id'] if chat_id_param else '100',
+                    'value': str(chat_id),
+                    'typeId': '1'
+                }
+            ) as update_response:
+                if update_response.status == 200:
+                    logger.info('Chat ID saved successfully')
+                    return True
+                else:
+                    logger.error(f'Failed to update chat_id: {update_response.status}')
+                    return False
+    except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for saving chat_id')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error saving chat_id to BGBilling: {e}')
         raise
 
-def get_balance(contract_id, chat_id='unknown'):
+async def get_balance(contract_id: str, chat_id: str = 'unknown') -> dict | None:
     """
     Получает баланс договора из BGBilling.
     
@@ -137,26 +126,25 @@ def get_balance(contract_id, chat_id='unknown'):
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/contractBalance',
-            params={'contractId': contract_id},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            logger.info('Balance request sent')
-            return response.json()
-        else:
-            logger.error(f'Failed to get balance: {response.status_code}')
-            return None
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(
+                f'{BGBILLING_API_URL}/jsonWebApi/contractBalance',
+                params={'contractId': contract_id}
+            ) as response:
+                if response.status == 200:
+                    logger.info('Balance request sent')
+                    return await response.json()
+                else:
+                    logger.error(f'Failed to get balance: {response.status}')
+                    return None
+    except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for balance')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error getting balance from BGBilling: {e}')
         raise
 
-def get_tariff_cost(contract_id, chat_id='unknown'):
+async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> dict | None:
     """
     Получает информацию о тарифе договора из BGBilling.
     
@@ -168,26 +156,25 @@ def get_tariff_cost(contract_id, chat_id='unknown'):
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/contractTarifPlans',
-            params={'contractId': contract_id},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            logger.info('Tariff request sent')
-            return response.json()
-        else:
-            logger.error(f'Failed to get tariff: {response.status_code}')
-            return None
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(
+                f'{BGBILLING_API_URL}/jsonWebApi/contractTarifPlans',
+                params={'contractId': contract_id}
+            ) as response:
+                if response.status == 200:
+                    logger.info('Tariff request sent')
+                    return await response.json()
+                else:
+                    logger.error(f'Failed to get tariff: {response.status}')
+                    return None
+    except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for tariff')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error getting tariff from BGBilling: {e}')
         raise
 
-def get_news(contract_id, chat_id='unknown'):
+async def get_news(contract_id: str, chat_id: str = 'unknown') -> dict | None:
     """
     Получает последние новости для договора из BGBilling.
     
@@ -199,26 +186,25 @@ def get_news(contract_id, chat_id='unknown'):
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/newsList',
-            params={'contractId': contract_id},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            logger.info('News request sent')
-            return response.json()
-        else:
-            logger.error(f'Failed to get news: {response.status_code}')
-            return None
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(
+                f'{BGBILLING_API_URL}/jsonWebApi/newsList',
+                params={'contractId': contract_id}
+            ) as response:
+                if response.status == 200:
+                    logger.info('News request sent')
+                    return await response.json()
+                else:
+                    logger.error(f'Failed to get news: {response.status}')
+                    return None
+    except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for news')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error getting news from BGBilling: {e}')
         raise
 
-def get_last_payments(contract_id, chat_id='unknown'):
+async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> dict | None:
     """
     Получает последние платежи по договору из BGBilling.
     
@@ -230,21 +216,20 @@ def get_last_payments(contract_id, chat_id='unknown'):
     """
     set_chat_id(chat_id)
     try:
-        response = requests.get(
-            f'{BGBILLING_API_URL}/jsonWebApi/lastContractPayments',
-            params={'contractId': contract_id, 'members': 1, 'lastPayments': 3},
-            auth=BGBILLING_AUTH,
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            logger.info('Payments request sent')
-            return response.json()
-        else:
-            logger.error(f'Failed to get payments: {response.status_code}')
-            return None
-    except Timeout:
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(*BGBILLING_AUTH), timeout=ClientTimeout(total=REQUEST_TIMEOUT)) as session:
+            async with session.get(
+                f'{BGBILLING_API_URL}/jsonWebApi/lastContractPayments',
+                params={'contractId': contract_id, 'members': 1, 'lastPayments': 3}
+            ) as response:
+                if response.status == 200:
+                    logger.info('Payments request sent')
+                    return await response.json()
+                else:
+                    logger.error(f'Failed to get payments: {response.status}')
+                    return None
+    except aiohttp.ClientTimeout:
         logger.error('Timeout connecting to BGBilling API for payments')
         raise
-    except RequestException as e:
+    except ClientError as e:
         logger.error(f'Error getting payments from BGBilling: {e}')
         raise
