@@ -7,10 +7,14 @@ from config import BOT_TOKEN, BILLING_API_TOKEN
 from logger import logger
 from handlers import admin  # подключим админский роутер для примера
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
+from aiogram.client.default import DefaultBotProperties
 
 async def main():
     # --- Telegram bot ---
-    bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode="HTML")
+    )
     dp = Dispatcher()
 
     # Подключение роутеров
