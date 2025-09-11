@@ -1,13 +1,12 @@
-import asyncio
+import re
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-import re
 
-from db import save_user, get_contract_id_by_chat_id, is_user_authorized
-from bgbilling import check_contract
+from db import save_user, is_user_authorized
+from bgbilling import authenticate
 from logger import logger, set_chat_id
 
 router = Router()
@@ -15,6 +14,7 @@ router = Router()
 
 class AuthStates(StatesGroup):
     waiting_for_contract_id = State()
+    waiting_for_password = State()
 
 
 @router.message(Command("start"))
@@ -40,27 +40,39 @@ async def process_contract_id(message: Message, state: FSMContext):
     set_chat_id(message.from_user.id)
     contract_id = message.text.strip()
 
-    if not re.match(r"^\d{3,6}$", contract_id):
+    if not re.match(r"^\\d{3,6}$", contract_id):
         logger.warning(f"Invalid contract_id format: {contract_id}")
         await message.answer(
             "Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова:"
         )
         return
 
+    await state.update_data(contract_id=contract_id)
+    await message.answer("Теперь введите пароль от статистики:")
+    await state.set_state(AuthStates.waiting_for_password)
+
+
+@router.message(AuthStates.waiting_for_password)
+async def process_password(message: Message, state: FSMContext):
+    set_chat_id(message.from_user.id)
+    password = message.text.strip()
+    data = await state.get_data()
+    contract_id = data.get("contract_id")
+
     try:
-        if await check_contract(contract_id, str(message.from_user.id)):
+        result = await authenticate(contract_id, password, str(message.from_user.id))
+        if result and result.get("success"):
             await save_user(message.from_user.id, contract_id)
-            logger.info(f"User authorized with contract_id: {contract_id}")
+            logger.info(f"User {message.from_user.id} authorized with contract_id: {contract_id}")
             await message.answer(
-                "Авторизация успешна! Используйте /menu для доступа к функциям."
+                "✅ Авторизация успешна! Используйте /menu для доступа к функциям."
             )
             await state.clear()
         else:
-            logger.warning(f"Contract_id {contract_id} not found in BGBilling")
-            await message.answer("Номер договора не найден. Попробуйте снова:")
+            logger.warning(f"Authorization failed for contract_id {contract_id}")
+            await message.answer("❌ Неверный номер договора или пароль. Попробуйте снова.")
+            await state.clear()
     except Exception as e:
-        logger.error(f"Error during authorization: {e}")
-        await message.answer(
-            "Произошла ошибка при авторизации. Попробуйте снова позже."
-        )
+        logger.error(f"Error during authentication: {e}")
+        await message.answer("Произошла ошибка при авторизации. Попробуйте снова позже.")
         await state.clear()
