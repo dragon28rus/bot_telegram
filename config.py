@@ -26,3 +26,5 @@ BILLING_API_TOKEN = os.getenv('BILLING_API_TOKEN')
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_DIR = os.getenv("LOG_DIR", "./logs")
+LOG_FILE = os.getenv("LOG_FILE", "bot.log")

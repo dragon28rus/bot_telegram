@@ -4,3 +4,4 @@ python-decouple==3.8
 html2text==2020.1.16
 aiohttp>=3.8.0
 python-dotenv>=0.20.0
+aiosqlite
