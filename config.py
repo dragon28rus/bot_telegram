@@ -28,3 +28,6 @@ BILLING_API_TOKEN = os.getenv('BILLING_API_TOKEN')
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_DIR = os.getenv("LOG_DIR", "./logs")
 LOG_FILE = os.getenv("LOG_FILE", "bot.log")
+
+# Список ID администраторов (строки через запятую)
+ADMIN_CHAT_IDS = os.getenv("ADMIN_CHAT_IDS", "").split(",") if os.getenv("ADMIN_CHAT_IDS") else []
