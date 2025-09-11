@@ -1,5 +1,5 @@
 import aiosqlite
-from logger import logger, set_chat_id
+from logger import logger
 from config import DB_PATH
 
 
@@ -10,7 +10,8 @@ async def init_db():
                 """
                 CREATE TABLE IF NOT EXISTS users (
                     chat_id INTEGER PRIMARY KEY,
-                    contract_id TEXT
+                    contract_id INTEGER,        -- внутренний ID из BGBilling
+                    contract_title TEXT         -- номер договора (внешний)
                 )
                 """
             )
@@ -57,15 +58,18 @@ async def get_chat_id_by_support_message_id(support_message_id: int):
         return None
 
 
-async def save_user(chat_id: int, contract_id: str):
+async def save_user(chat_id: int, contract_id: int, contract_title: str):
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
-                "INSERT OR REPLACE INTO users (chat_id, contract_id) VALUES (?, ?)",
-                (chat_id, contract_id),
+                """
+                INSERT OR REPLACE INTO users (chat_id, contract_id, contract_title)
+                VALUES (?, ?, ?)
+                """,
+                (chat_id, contract_id, contract_title),
             )
             await db.commit()
-        logger.info(f"chat_id:{chat_id} - User saved with contract_id: {contract_id}")
+        logger.info(f"chat_id:{chat_id} - User saved with contract_id={contract_id}, title={contract_title}")
     except Exception as e:
         logger.error(f"chat_id:{chat_id} - Error saving user: {e}")
 
@@ -74,7 +78,7 @@ async def is_user_authorized(chat_id: int) -> bool:
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
-                "SELECT contract_id FROM users WHERE chat_id = ?", (chat_id,)
+                "SELECT 1 FROM users WHERE chat_id = ?", (chat_id,)
             ) as cursor:
                 result = await cursor.fetchone()
                 return result is not None
@@ -83,11 +87,11 @@ async def is_user_authorized(chat_id: int) -> bool:
         return False
 
 
-async def get_chat_id_by_contract_id(contract_id: str):
+async def get_chat_id_by_contract_id(contract_id: int):
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
-                "SELECT chat_id FROM users WHERE contract_id = ?", (contract_id,)
+                "SELECT chat_id FROM users WHERE contract_id = ?", (contract_id,),
             ) as cursor:
                 result = await cursor.fetchone()
                 return result[0] if result else None
@@ -96,7 +100,37 @@ async def get_chat_id_by_contract_id(contract_id: str):
         return None
 
 
-async def get_contract_id_by_chat_id(chat_id: int):
+async def get_contract_by_chat_id(chat_id: int):
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute(
+                "SELECT contract_id, contract_title FROM users WHERE chat_id = ?", (chat_id,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                if result:
+                    return {"contract_id": result[0], "contract_title": result[1]}
+                return None
+    except Exception as e:
+        logger.error(f"chat_id:{chat_id} - Error retrieving contract by chat_id: {e}")
+        return None
+
+
+async def get_contract_title_by_chat_id(chat_id: int) -> str | None:
+    """Вернуть только номер договора (contract_title) по chat_id"""
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute(
+                "SELECT contract_title FROM users WHERE chat_id = ?", (chat_id,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else None
+    except Exception as e:
+        logger.error(f"chat_id:{chat_id} - Error retrieving contract_title: {e}")
+        return None
+
+
+async def get_contract_id_by_chat_id(chat_id: int) -> int | None:
+    """Вернуть только внутренний contract_id по chat_id"""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
