@@ -16,16 +16,15 @@ def set_chat_id(chat_id: str):
     """
     _current_chat_id.set(str(chat_id))
 
-class ChatIdFilter(logging.Filter):
-    """
-    Кастомный фильтр для добавления chat_id из contextvars в каждую запись лога.
-    """
-    def filter(self, record: logging.LogRecord) -> bool:
-        try:
-            record.chat_id = _current_chat_id.get()
-        except LookupError:
-            record.chat_id = "unknown"
-        return True
+class ChatIdFormatter(logging.Formatter):
+    """Форматтер, который всегда добавляет chat_id (даже если его нет)"""
+    def format(self, record: logging.LogRecord) -> str:
+        if not hasattr(record, "chat_id"):
+            try:
+                record.chat_id = _current_chat_id.get()
+            except LookupError:
+                record.chat_id = "unknown"
+        return super().format(record)
 
 # --- Настройка логов ---
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -41,6 +40,11 @@ file_handler = RotatingFileHandler(
 
 console_handler = logging.StreamHandler()
 
+formatter = ChatIdFormatter(fmt)
+
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
 # Базовая конфигурация
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
@@ -48,6 +52,5 @@ logging.basicConfig(
     handlers=[file_handler, console_handler]
 )
 
-# Создаём логгер
+# Основной логгер проекта
 logger = logging.getLogger("bot")
-logger.addFilter(ChatIdFilter())
