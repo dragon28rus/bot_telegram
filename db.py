@@ -1,6 +1,7 @@
 import aiosqlite
 from logger import logger
 from config import DB_PATH
+from typing import Optional, Dict, Any, List, Union
 
 
 async def init_db():
@@ -44,7 +45,7 @@ async def save_support_request(chat_id: int, support_message_id: int):
         logger.error(f"chat_id:{chat_id} - Error saving support request: {e}")
 
 
-async def get_chat_id_by_support_message_id(support_message_id: int):
+async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[int]:
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
@@ -87,7 +88,7 @@ async def is_user_authorized(chat_id: int) -> bool:
         return False
 
 
-async def get_chat_id_by_contract_id(contract_id: int):
+async def get_chat_id_by_contract_id(contract_id: int) -> Optional[int]:
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
@@ -100,7 +101,7 @@ async def get_chat_id_by_contract_id(contract_id: int):
         return None
 
 
-async def get_contract_by_chat_id(chat_id: int):
+async def get_contract_by_chat_id(chat_id: int) -> Optional[Dict[str, Any]]:
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
@@ -115,7 +116,7 @@ async def get_contract_by_chat_id(chat_id: int):
         return None
 
 
-async def get_contract_title_by_chat_id(chat_id: int) -> str | None:
+async def get_contract_title_by_chat_id(chat_id: int) -> Optional[str]:
     """Вернуть только номер договора (contract_title) по chat_id"""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
@@ -129,7 +130,7 @@ async def get_contract_title_by_chat_id(chat_id: int) -> str | None:
         return None
 
 
-async def get_contract_id_by_chat_id(chat_id: int) -> int | None:
+async def get_contract_id_by_chat_id(chat_id: int) -> Optional[int]:
     """Вернуть только внутренний contract_id по chat_id"""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
@@ -143,7 +144,7 @@ async def get_contract_id_by_chat_id(chat_id: int) -> int | None:
         return None
 
 
-async def get_all_chat_ids():
+async def get_all_chat_ids() -> List[int]:
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute("SELECT chat_id FROM users") as cursor:
