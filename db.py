@@ -11,8 +11,8 @@ async def init_db():
                 """
                 CREATE TABLE IF NOT EXISTS users (
                     chat_id INTEGER PRIMARY KEY,
-                    contract_id INTEGER,        -- внутренний ID из BGBilling
-                    contract_title TEXT         -- номер договора (внешний)
+                    contract_id INTEGER,
+                    contract_title TEXT
                 )
                 """
             )
