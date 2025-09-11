@@ -4,18 +4,18 @@ from typing import Union
 from config import BGBILLING_API_URL, BGBILLING_AUTH
 from logger import logger, set_chat_id
 
-# Таймаут для всех запросов (в секундах)
+# Timeout for all requests (in seconds)
 REQUEST_TIMEOUT = 5
 
 async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
     """
-    Проверяет существование договора в BGBilling по contract_id.
+    Checks if a contract exists in BGBilling by contract_id.
     
     Args:
-        contract_id: Номер договора для проверки.
-        chat_id: Telegram chat_id для логирования.
+        contract_id: Contract number to check.
+        chat_id: Telegram chat_id for logging.
     Returns:
-        bool: True, если договор существует, False в противном случае.
+        bool: True if contract exists, False otherwise.
     """
     set_chat_id(chat_id)
     try:
@@ -42,18 +42,18 @@ async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
         logger.error(f'Unexpected error checking contract {contract_id}: {e}')
         return False
     finally:
-        await asyncio.sleep(0.01)  # Минимальная задержка для завершения операций
+        await asyncio.sleep(0.05)  # Increased delay for cleanup
 
 async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
-    Аутентифицирует пользователя в BGBilling.
+    Authenticates a user in BGBilling.
     
     Args:
-        contract_number: Номер договора
-        password: Пароль
-        chat_id: Telegram chat_id для логирования
+        contract_number: Contract number
+        password: Password
+        chat_id: Telegram chat_id for logging
     Returns:
-        Union[dict, None]: Результат аутентификации или None в случае ошибки
+        Union[dict, None]: Authentication result or None on error
     """
     set_chat_id(chat_id)
     try:
@@ -78,17 +78,17 @@ async def authenticate(contract_number: str, password: str, chat_id: str = 'unkn
         logger.error(f'Unexpected error in authentication: {e}')
         return None
     finally:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
 async def save_chat_id(contract_id: str, chat_id: str) -> bool:
     """
-    Сохраняет chat_id в параметрах договора в BGBilling.
+    Saves chat_id to contract parameters in BGBilling.
     
     Args:
-        contract_id: ID договора
+        contract_id: Contract ID
         chat_id: Telegram chat_id
     Returns:
-        bool: True если успешно, False в случае ошибки
+        bool: True if successful, False on error
     """
     set_chat_id(chat_id)
     try:
@@ -128,17 +128,17 @@ async def save_chat_id(contract_id: str, chat_id: str) -> bool:
         logger.error(f'Unexpected error saving chat_id: {e}')
         return False
     finally:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
 async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
-    Получает баланс договора из BGBilling.
+    Retrieves contract balance from BGBilling.
     
     Args:
-        contract_id: ID договора
-        chat_id: Telegram chat_id для логирования
+        contract_id: Contract ID
+        chat_id: Telegram chat_id for logging
     Returns:
-        Union[dict, None]: Данные о балансе или None в случае ошибки
+        Union[dict, None]: Balance data or None on error
     """
     set_chat_id(chat_id)
     try:
@@ -163,17 +163,17 @@ async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict,
         logger.error(f'Unexpected error getting balance: {e}')
         return None
     finally:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
 async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
-    Получает информацию о тарифе договора из BGBilling.
+    Retrieves tariff information for a contract from BGBilling.
     
     Args:
-        contract_id: ID договора
-        chat_id: Telegram chat_id для логирования
+        contract_id: Contract ID
+        chat_id: Telegram chat_id for logging
     Returns:
-        Union[dict, None]: Данные о тарифе или None в случае ошибки
+        Union[dict, None]: Tariff data or None on error
     """
     set_chat_id(chat_id)
     try:
@@ -198,17 +198,17 @@ async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[d
         logger.error(f'Unexpected error getting tariff: {e}')
         return None
     finally:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
 async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
-    Получает последние новости для договора из BGBilling.
+    Retrieves recent news for a contract from BGBilling.
     
     Args:
-        contract_id: ID договора
-        chat_id: Telegram chat_id для логирования
+        contract_id: Contract ID
+        chat_id: Telegram chat_id for logging
     Returns:
-        Union[dict, None]: Данные новостей или None в случае ошибки
+        Union[dict, None]: News data or None on error
     """
     set_chat_id(chat_id)
     try:
@@ -233,17 +233,17 @@ async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, No
         logger.error(f'Unexpected error getting news: {e}')
         return None
     finally:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
 async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
-    Получает последние платежи по договору из BGBilling.
+    Retrieves recent payments for a contract from BGBilling.
     
     Args:
-        contract_id: ID договора
-        chat_id: Telegram chat_id для логирования
+        contract_id: Contract ID
+        chat_id: Telegram chat_id for logging
     Returns:
-        Union[dict, None]: Данные о платежах или None в случае ошибки
+        Union[dict, None]: Payment data or None on error
     """
     set_chat_id(chat_id)
     try:
@@ -268,4 +268,4 @@ async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union
         logger.error(f'Unexpected error getting payments: {e}')
         return None
     finally:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
