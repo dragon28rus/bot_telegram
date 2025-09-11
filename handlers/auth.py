@@ -35,7 +35,7 @@ async def process_contract_id(message: Message, state: FSMContext):
         return
     
     try:
-        if check_contract(contract_id):
+        if check_contract(contract_id, str(message.from_user.id)):
             save_user(message.from_user.id, contract_id)
             logger.info(f"User authorized with contract_id: {contract_id}")
             await message.answer("Авторизация успешна! Используйте /menu для доступа к функциям.")

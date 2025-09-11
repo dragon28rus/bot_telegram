@@ -1,14 +1,12 @@
-from aiogram import Router
-from .auth import register_auth_handlers
-from .user import register_user_handlers
-from .support import register_support_handlers
-from .check import register_check_handlers
+from aiogram import Dispatcher
+from .auth import router as auth_router
+from .user import router as user_router
+from .support import router as support_router
+from .check import router as check_router
 from .billing import handle_billing_notification, handle_broadcast_notification
 
 def register_handlers(dp: Dispatcher):
-    router = Router()
-    register_auth_handlers(router)
-    register_user_handlers(router)
-    register_support_handlers(router)
-    register_check_handlers(router)
-    dp.include_router(router)
+    dp.include_router(auth_router)
+    dp.include_router(user_router)
+    dp.include_router(support_router)
+    dp.include_router(check_router)
