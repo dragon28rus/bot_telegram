@@ -36,7 +36,7 @@ async def main():
     # Запускаем бота и вебсервер параллельно
     await asyncio.gather(
         dp.start_polling(bot),
-        web._run_app(app, host="0.0.0.0", port=8080)
+        web._run_app(app, host="0.0.0.0", port=8443)
     )
 
 if __name__ == "__main__":
