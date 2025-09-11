@@ -3,30 +3,51 @@ from logger import logger
 from config import DB_PATH
 from typing import Optional, Dict, Any, List, Union
 
+# Проверим существование директории
+db_dir = os.path.dirname(DB_PATH)
+if db_dir and not os.path.exists(db_dir):
+    logger.info(f"chat_id:system - Creating database directory: {db_dir}")
+    os.makedirs(db_dir, exist_ok=True)
+    
+# Проверим права на запись
+if db_dir and not os.access(db_dir, os.W_OK):
+    logger.error(f"chat_id:system - No write access to database directory: {db_dir}")
 
 async def init_db():
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
-                """
+                '''
                 CREATE TABLE IF NOT EXISTS users (
                     chat_id INTEGER PRIMARY KEY,
                     contract_id INTEGER,
                     contract_title TEXT
                 )
-                """
+                '''
             )
+            
+            logger.info("chat_id:system - Users table created/check completed")
+            
             await db.execute(
-                """
+                '''
                 CREATE TABLE IF NOT EXISTS support_requests (
                     chat_id INTEGER,
                     support_message_id INTEGER,
                     PRIMARY KEY (chat_id, support_message_id),
                     FOREIGN KEY (chat_id) REFERENCES users(chat_id) ON DELETE CASCADE
                 )
-                """
+                '''
             )
+            
+            logger.info("chat_id:system - Support requests table created/check completed")
+            
             await db.commit()
+            
+            # Проверим, что таблицы действительно созданы
+            async with db.execute("SELECT name FROM sqlite_master WHERE type='table'") as cursor:
+                tables = await cursor.fetchall()
+                logger.info(f"chat_id:system - Database tables: {[table[0] for table in tables]}")
+            
         logger.info("chat_id:system - Database initialized")
     except Exception as e:
         logger.error(f"chat_id:system - Error initializing database: {e}")
