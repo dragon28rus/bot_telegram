@@ -4,6 +4,12 @@ __pycache__/
 *$py.class
 
 
+.vscode
+.vscode/
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
 .pydevproject
 .project
 *.pydevproject
@@ -12,7 +18,6 @@ __pycache__/
 logs/
 # C extensions
 *.so
-
 # DB
 *.db
 cable_bot.db
