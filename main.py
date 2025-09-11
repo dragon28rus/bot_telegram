@@ -1,32 +1,43 @@
 # main.py
 import asyncio
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from aiohttp import web
 
-from config import BOT_TOKEN, BILLING_API_TOKEN
+from config import BOT_TOKEN
 from logger import logger
-from handlers import admin  # подключим админский роутер для примера
+from handlers import admin
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
-from aiogram.client.default import DefaultBotProperties
+from db.users import init_users_table
+
 
 async def main():
-    # --- Telegram bot ---
+    # --- инициализация базы данных ---
+    await init_users_table()
+
+    # --- настройка Telegram бота ---
     bot = Bot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode="HTML")
     )
+
+    # Удаляем webhook, иначе polling не запустится
+    await bot.delete_webhook(drop_pending_updates=True)
+
     dp = Dispatcher()
 
-    # Подключение роутеров
-    dp.include_router(admin.router)  # пока только админ, потом добавим все остальные
+    # --- подключаем роутеры ---
+    dp.include_router(admin.router)
+    # позже сюда добавим остальные: auth, balance, news и т.д.
 
-    # --- aiohttp web server ---
+    # --- aiohttp сервер для биллинга ---
     app = web.Application()
 
-    # Добавляем роуты для вебхуков биллинга
+    # Эндпоинт: сообщение конкретному пользователю
     app.router.add_post(
         "/billing/notify", lambda r: handle_billing_notification(r, bot)
     )
+    # Эндпоинт: рассылка всем пользователям
     app.router.add_post(
         "/billing/broadcast", lambda r: handle_broadcast_notification(r, bot)
     )
@@ -36,8 +47,9 @@ async def main():
     # Запускаем бота и вебсервер параллельно
     await asyncio.gather(
         dp.start_polling(bot),
-        web._run_app(app, host="0.0.0.0", port=8443)
+        web._run_app(app, host="0.0.0.0", port=8080)  # можно вынести порт в .env
     )
+
 
 if __name__ == "__main__":
     try:
