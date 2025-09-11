@@ -1,53 +1,50 @@
+# logger.py
 import logging
 import os
 import contextvars
 from logging.handlers import RotatingFileHandler
-from config import LOG_DIR, LOG_FILE, LOG_LEVEL
+from config import LOG_LEVEL, LOG_DIR, LOG_FILE
 
-# Context variable for chat_id
+# --- Context variable for chat_id ---
 _current_chat_id: contextvars.ContextVar[str] = contextvars.ContextVar("chat_id", default="unknown")
 
-
-def set_chat_id(chat_id):
-    """Set chat_id for logging in current context."""
+def set_chat_id(chat_id: str):
+    """
+    Устанавливает chat_id в текущем контексте.
+    Это удобно для асинхронного кода, чтобы в логах было видно,
+    к какому пользователю относится запись.
+    """
     _current_chat_id.set(str(chat_id))
 
-
-class ChatIDFilter(logging.Filter):
-    def filter(self, record):
+class ChatIdFilter(logging.Filter):
+    """
+    Кастомный фильтр для добавления chat_id из contextvars в каждую запись лога.
+    """
+    def filter(self, record: logging.LogRecord) -> bool:
         record.chat_id = _current_chat_id.get()
         return True
 
-
-# Ensure log directory exists
+# --- Настройка логов ---
 os.makedirs(LOG_DIR, exist_ok=True)
-
-# Full log path
 log_path = os.path.join(LOG_DIR, LOG_FILE)
 
-# Configure logger
-logger = logging.getLogger("cable_bot")
-logger.setLevel(LOG_LEVEL)
+# Обработчики: файл с ротацией + консоль
+file_handler = RotatingFileHandler(
+    log_path,
+    maxBytes=5 * 1024 * 1024,  # 5 MB
+    backupCount=5,             # хранить 5 старых файлов
+    encoding="utf-8"
+)
 
-# Prevent adding handlers multiple times
-if not logger.handlers:
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - chat_id:%(chat_id)s - %(message)s"
-    )
+console_handler = logging.StreamHandler()
 
-    # File handler with rotation (5 MB, 5 backups)
-    file_handler = RotatingFileHandler(
-        log_path, maxBytes=5 * 1024 * 1024, backupCount=5, encoding="utf-8"
-    )
-    file_handler.setLevel(LOG_LEVEL)
-    file_handler.setFormatter(formatter)
+# Базовая конфигурация
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
+    format="%(asctime)s [%(levelname)s] [chat_id=%(chat_id)s] %(name)s: %(message)s",
+    handlers=[file_handler, console_handler]
+)
 
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(LOG_LEVEL)
-    console_handler.setFormatter(formatter)
-
-    # Add handlers and filter
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-    logger.addFilter(ChatIDFilter())
+# Создаём логгер
+logger = logging.getLogger("bot")
+logger.addFilter(ChatIdFilter())

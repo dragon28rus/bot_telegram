@@ -1,36 +1,32 @@
+# config.py
 import os
 from dotenv import load_dotenv
 
 # Загружаем переменные из .env
 load_dotenv()
 
-# Токен Telegram-бота
+# --- Telegram ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# SQLite Database
-DB_PATH = os.getenv("DB_PATH", "./db.sqlite3")
+# --- Database ---
+DB_PATH = os.getenv("DB_PATH", "./data/bot.db")
 
-# Настройки BGBilling API
-BGBILLING_API_URL = os.getenv('BGBILLING_API_URL')
-BGBILLING_AUTH = (os.getenv('BGBILLING_USERNAME'), os.getenv('BGBILLING_PASSWORD'))
+# --- BGBilling API ---
+BGBILLING_API_URL = os.getenv("BGBILLING_API_URL")
+BGBILLING_AUTH = os.getenv("BGBILLING_AUTH")  # например login:password
+BILLING_API_TOKEN = os.getenv("BILLING_API_TOKEN")
 
-# Настройки вебхука
-WEBHOOK_URL = os.getenv('WEBHOOK_URL')
+# --- Webhook ---
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 
-# Chat ID технической поддержки
+# --- Support ---
 SUPPORT_CHAT_ID = int(os.getenv("SUPPORT_CHAT_ID", "0"))
 
-# Токен для авторизации биллинг API
-BILLING_API_TOKEN = os.getenv('BILLING_API_TOKEN')
-
-# Logging
+# --- Logging ---
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_DIR = os.getenv("LOG_DIR", "./logs")
 LOG_FILE = os.getenv("LOG_FILE", "bot.log")
 
-# Список ID администраторов (строки через запятую)
-ADMIN_CHAT_IDS = os.getenv("ADMIN_CHAT_IDS", "").split(",") if os.getenv("ADMIN_CHAT_IDS") else []
-
-# Убедитесь, что пустые значения убраны
-ADMIN_CHAT_IDS = [id.strip() for id in ADMIN_CHAT_IDS if id.strip()]
+# --- Admins ---
+ADMIN_CHAT_IDS = [x.strip() for x in os.getenv("ADMIN_CHAT_IDS", "").split(",") if x.strip()]
