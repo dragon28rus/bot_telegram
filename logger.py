@@ -40,16 +40,17 @@ file_handler = RotatingFileHandler(
 
 console_handler = logging.StreamHandler()
 
+# Общий формат
+fmt = "%(asctime)s [%(levelname)s] [chat_id=%(chat_id)s] %(name)s: %(message)s"
 formatter = ChatIdFormatter(fmt)
 
 file_handler.setFormatter(formatter)
 console_handler.setFormatter(formatter)
 
-# Базовая конфигурация
+# Настройка root-логгера
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
-    format="%(asctime)s [%(levelname)s] [chat_id=%(chat_id)s] %(name)s: %(message)s",
-    handlers=[file_handler, console_handler]
+    handlers=[file_handler, console_handler],
 )
 
 # Основной логгер проекта
