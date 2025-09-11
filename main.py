@@ -6,6 +6,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from config import BOT_TOKEN, WEBHOOK_URL, WEBHOOK_PATH
 from logger import logger, set_chat_id
+from db import init_db
 from handlers import (
     auth_router,
     check_router,
@@ -39,6 +40,7 @@ async def retry_with_backoff(bot: Bot, action: str, max_attempts=3, base_delay=1
 async def on_startup(bot: Bot, app: web.Application):
     set_chat_id("system")
     try:
+        await init_db()
         await retry_with_backoff(bot, "set_webhook", url=WEBHOOK_URL + WEBHOOK_PATH)
         logger.info("Webhook set successfully")
     except Exception as e:
