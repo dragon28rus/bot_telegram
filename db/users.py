@@ -1,5 +1,6 @@
 # db/users.py
 import aiosqlite
+import os
 from typing import Optional, List, Dict, Any
 from config import DB_PATH
 
