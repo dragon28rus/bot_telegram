@@ -1,20 +1,20 @@
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
-from aiogram.filters import CommandObject
 import os
 import sys
 import signal
 from logger import logger
 from config import ADMIN_CHAT_IDS
 
-admin_router = Router()
+# Создаем роутер ДО его использования
+router = Router()
 
 def is_admin(user_id: int) -> bool:
     """Проверка, является ли пользователь администратором"""
     return str(user_id) in ADMIN_CHAT_IDS if ADMIN_CHAT_IDS else False
 
-@admin_router.message(Command("stop"))
+@router.message(Command("stop"))
 async def stop_bot(message: Message):
     """Команда остановки бота"""
     if not is_admin(message.from_user.id):
@@ -30,7 +30,7 @@ async def stop_bot(message: Message):
     # Отправляем сигнал завершения процессу
     os.kill(os.getpid(), signal.SIGTERM)
 
-@admin_router.message(Command("restart"))
+@router.message(Command("restart"))
 async def restart_bot(message: Message):
     """Команда перезапуска бота"""
     if not is_admin(message.from_user.id):
@@ -47,7 +47,7 @@ async def restart_bot(message: Message):
     python = sys.executable
     os.execl(python, python, *sys.argv)
 
-@admin_router.message(Command("status"))
+@router.message(Command("status"))
 async def status_bot(message: Message):
     """Команда проверки статуса бота"""
     if not is_admin(message.from_user.id):
@@ -56,7 +56,7 @@ async def status_bot(message: Message):
     
     await message.answer("✅ Бот работает нормально")
 
-@admin_router.message(Command("help_admin"))
+@router.message(Command("help_admin"))
 async def help_admin(message: Message):
     """Помощь для администратора"""
     if not is_admin(message.from_user.id):
@@ -66,10 +66,10 @@ async def help_admin(message: Message):
     help_text = """
 🤖 <b>Административные команды:</b>
 
--stop - Остановить бота
--restart - Перезапустить бота
--status - Проверить статус бота
--help_admin - Показать это сообщение
+/stop - Остановить бота
+/restart - Перезапустить бота
+/status - Проверить статус бота
+/help_admin - Показать это сообщение
 
 ⚠️ <i>Используйте с осторожностью!</i>
 """
