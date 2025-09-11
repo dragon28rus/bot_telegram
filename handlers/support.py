@@ -1,4 +1,3 @@
-#### handlers/support.py
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
@@ -6,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from config import SUPPORT_CHAT_ID
 from logger import logger, set_chat_id
-from db import is_user_authorized, get_contract_id_by_chat_id
+from db import is_user_authorized, get_contract_id_by_chat_id, save_support_request, get_chat_id_by_support_message_id
 
 router = Router()
 
@@ -34,8 +33,6 @@ async def support_request(message: Message, state: FSMContext):
     )
     
     # Сохраняем связь между сообщением в группе и пользователем
-    # Предполагается, что db.py поддерживает функцию save_support_request
-    from db import save_support_request
     save_support_request(user_chat_id, support_message.message_id)
     
     logger.info("Support request sent")
@@ -49,7 +46,6 @@ async def handle_support_reply(message: Message):
     reply_to_message_id = message.reply_to_message.message_id
     
     # Ищем chat_id пользователя, связанного с этим message_id
-    from db import get_chat_id_by_support_message_id
     user_chat_id = get_chat_id_by_support_message_id(reply_to_message_id)
     
     if user_chat_id:

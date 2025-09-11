@@ -1,5 +1,6 @@
-aiogram==2.25.2
+aiogram>=3.0.0
 requests==2.31.0
 python-decouple==3.8
 html2text==2020.1.16
-aiohttp==3.8.5
+aiohttp>=3.8.0
+python-dotenv>=0.20.0
