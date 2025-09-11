@@ -1,4 +1,3 @@
-### db.py
 import sqlite3
 from logger import logger, set_chat_id
 
@@ -54,7 +53,7 @@ def get_chat_id_by_support_message_id(support_message_id):
     finally:
         conn.close()
 
-# Существующие функции (для полноты, без изменений)
+# Сохранение пользователя
 def save_user(chat_id, contract_id):
     try:
         conn = sqlite3.connect('/opt/cable_bot/users.db')
@@ -67,6 +66,7 @@ def save_user(chat_id, contract_id):
     finally:
         conn.close()
 
+# Проверка авторизации пользователя
 def is_user_authorized(chat_id):
     try:
         conn = sqlite3.connect('/opt/cable_bot/users.db')
@@ -80,6 +80,7 @@ def is_user_authorized(chat_id):
     finally:
         conn.close()
 
+# Получение chat_id по contract_id
 def get_chat_id_by_contract_id(contract_id):
     try:
         conn = sqlite3.connect('/opt/cable_bot/users.db')
@@ -93,6 +94,7 @@ def get_chat_id_by_contract_id(contract_id):
     finally:
         conn.close()
 
+# Получение contract_id по chat_id
 def get_contract_id_by_chat_id(chat_id):
     try:
         conn = sqlite3.connect('/opt/cable_bot/users.db')
@@ -106,6 +108,7 @@ def get_contract_id_by_chat_id(chat_id):
     finally:
         conn.close()
 
+# Получение всех chat_id
 def get_all_chat_ids():
     try:
         conn = sqlite3.connect('/opt/cable_bot/users.db')

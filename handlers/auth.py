@@ -1,101 +1,49 @@
 #### handlers/auth.py
+from aiogram import Router, F
+from aiogram.types import Message
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 import re
-from aiogram import types
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from bgbilling import authenticate, save_chat_id
-from db import save_user, get_contract_id
-from keyboards import get_main_keyboard
+from db import save_user, get_contract_id_by_chat_id, is_user_authorized
+from bgbilling import check_contract
 from logger import logger, set_chat_id
 
-# Определение состояний для конечного автомата (FSM) аутентификации
-class AuthState(StatesGroup):
-    contract_number = State()
-    password = State()
+router = Router()
 
-async def start(message: types.Message):
-    """
-    Обрабатывает команду /start, проверяет авторизацию пользователя и инициирует процесс аутентификации.
-    
-    Args:
-        message: Входящее сообщение от пользователя
-    """
-    chat_id = message.chat.id
-    set_chat_id(chat_id)
-    contract_id = get_contract_id(chat_id)
-    if contract_id:
-        await message.reply('Вы уже авторизованы!', reply_markup=get_main_keyboard())
-        logger.info('User already authorized')
+class AuthStates(StatesGroup):
+    waiting_for_contract_id = State()
+
+@router.message(Command("start"))
+async def cmd_start(message: Message, state: FSMContext):
+    set_chat_id(message.from_user.id)
+    if is_user_authorized(message.from_user.id):
+        logger.info("User already authorized")
+        await message.answer("Вы уже авторизованы. Используйте /menu для доступа к функциям.")
     else:
-        await message.reply('Добрый день! Для идентификации введите номер договора.')
-        await AuthState.contract_number.set()
-        logger.info('Started authorization process')
+        logger.info("Starting authorization process")
+        await message.answer("Введите номер договора (3-6 цифр):")
+        await state.set_state(AuthStates.waiting_for_contract_id)
 
-async def process_contract_number(message: types.Message, state: FSMContext):
-    """
-    Обрабатывает введённый номер договора, проверяет его формат и запрашивает пароль.
+@router.message(AuthStates.waiting_for_contract_id)
+async def process_contract_id(message: Message, state: FSMContext):
+    set_chat_id(message.from_user.id)
+    contract_id = message.text.strip()
     
-    Args:
-        message: Входящее сообщение с номером договора
-        state: Состояние FSM для хранения данных
-    """
-    chat_id = message.chat.id
-    set_chat_id(chat_id)
-    contract_number = message.text.strip()
-    # Проверка формата номера договора (3–6 цифр)
-    if not re.match(r'^\d{3,6}$', contract_number):
-        await message.reply('Неверный формат номера договора. Введите 3–6 цифр.')
-        logger.warning('Invalid contract number format')
+    if not re.match(r'^\d{3,6}$', contract_id):
+        logger.warning(f"Invalid contract_id format: {contract_id}")
+        await message.answer("Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова:")
         return
-    await state.update_data(contract_number=contract_number)
-    await message.reply('Теперь введите пароль от статистики.')
-    await AuthState.password.set()
-    logger.info('Contract number received')
-
-async def process_password(message: types.Message, state: FSMContext):
-    """
-    Обрабатывает введённый пароль, выполняет аутентификацию и сохраняет данные пользователя.
     
-    Args:
-        message: Входящее сообщение с паролем
-        state: Состояние FSM с данными номера договора
-    """
-    chat_id = message.chat.id
-    set_chat_id(chat_id)
-    data = await state.get_data()
-    contract_number = data.get('contract_number')
-    password = message.text
     try:
-        auth_result = authenticate(contract_number, password, chat_id=chat_id)
+        if check_contract(contract_id):
+            save_user(message.from_user.id, contract_id)
+            logger.info(f"User authorized with contract_id: {contract_id}")
+            await message.answer("Авторизация успешна! Используйте /menu для доступа к функциям.")
+            await state.clear()
+        else:
+            logger.warning(f"Contract_id {contract_id} not found in BGBilling")
+            await message.answer("Номер договора не найден. Попробуйте снова:")
     except Exception as e:
-        await message.reply('Ошибка подключения к биллингу. Пожалуйста, попробуйте позже.')
-        logger.error(f'Authentication error: {e}')
-        return
-    
-    if auth_result and auth_result.get('status') == 'Ok':
-        contract_id = auth_result['contractId']
-        try:
-            if save_chat_id(contract_id, chat_id) and save_user(chat_id, contract_number, contract_id):
-                await message.reply('Аутентификация успешна! Теперь вы можете использовать бота.', reply_markup=get_main_keyboard())
-                await state.finish()
-                logger.info('Authentication successful')
-            else:
-                await message.reply('Ошибка при сохранении данных. Попробуйте позже.')
-                logger.error('Error saving user data')
-        except Exception as e:
-            await message.reply('Ошибка подключения к биллингу при сохранении данных. Пожалуйста, попробуйте позже.')
-            logger.error(f'Error saving chat_id: {e}')
-    else:
-        await message.reply('Неверный номер договора или пароль. Попробуйте заново /start.')
-        logger.warning('Invalid contract number or password')
-
-def register_auth_handlers(dp):
-    """
-    Регистрирует хэндлеры для аутентификации.
-    
-    Args:
-        dp: Dispatcher объект для регистрации хэндлеров
-    """
-    dp.register_message_handler(start, commands=['start'])
-    dp.register_message_handler(process_contract_number, state=AuthState.contract_number)
-    dp.register_message_handler(process_password, state=AuthState.password)
+        logger.error(f"Error during authorization: {e}")
+        await message.answer("Произошла ошибка при авторизации. Попробуйте снова позже.")
