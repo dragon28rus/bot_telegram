@@ -8,7 +8,7 @@ import signal
 from logger import logger
 from config import ADMIN_CHAT_IDS
 
-admin_router = Router()
+router = Router()
 
 def is_admin(user_id: int) -> bool:
     """Проверка, является ли пользователь администратором"""

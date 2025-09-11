@@ -31,3 +31,6 @@ LOG_FILE = os.getenv("LOG_FILE", "bot.log")
 
 # Список ID администраторов (строки через запятую)
 ADMIN_CHAT_IDS = os.getenv("ADMIN_CHAT_IDS", "").split(",") if os.getenv("ADMIN_CHAT_IDS") else []
+
+# Убедитесь, что пустые значения убраны
+ADMIN_CHAT_IDS = [id.strip() for id in ADMIN_CHAT_IDS if id.strip()]
