@@ -1,5 +1,6 @@
 import aiohttp
 from aiohttp import ClientTimeout, ClientError
+from typing import Union
 from config import BGBILLING_API_URL, BGBILLING_AUTH
 from logger import logger, set_chat_id
 
@@ -38,7 +39,7 @@ async def check_contract(contract_id: str, chat_id: str = 'unknown') -> bool:
         logger.error(f'Error checking contract {contract_id}: {e}')
         raise
 
-async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> dict | None:
+async def authenticate(contract_number: str, password: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
     Аутентифицирует пользователя в BGBilling.
     
@@ -47,7 +48,7 @@ async def authenticate(contract_number: str, password: str, chat_id: str = 'unkn
         password: Пароль
         chat_id: Telegram chat_id для логирования
     Returns:
-        dict or None: Результат аутентификации или None в случае ошибки
+        Union[dict, None]: Результат аутентификации или None в случае ошибки
     """
     set_chat_id(chat_id)
     try:
@@ -114,7 +115,7 @@ async def save_chat_id(contract_id: str, chat_id: str) -> bool:
         logger.error(f'Error saving chat_id to BGBilling: {e}')
         raise
 
-async def get_balance(contract_id: str, chat_id: str = 'unknown') -> dict | None:
+async def get_balance(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
     Получает баланс договора из BGBilling.
     
@@ -122,7 +123,7 @@ async def get_balance(contract_id: str, chat_id: str = 'unknown') -> dict | None
         contract_id: ID договора
         chat_id: Telegram chat_id для логирования
     Returns:
-        dict or None: Данные о балансе или None в случае ошибки
+        Union[dict, None]: Данные о балансе или None в случае ошибки
     """
     set_chat_id(chat_id)
     try:
@@ -144,7 +145,7 @@ async def get_balance(contract_id: str, chat_id: str = 'unknown') -> dict | None
         logger.error(f'Error getting balance from BGBilling: {e}')
         raise
 
-async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> dict | None:
+async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
     Получает информацию о тарифе договора из BGBilling.
     
@@ -152,7 +153,7 @@ async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> dict | 
         contract_id: ID договора
         chat_id: Telegram chat_id для логирования
     Returns:
-        dict or None: Данные о тарифе или None в случае ошибки
+        Union[dict, None]: Данные о тарифе или None в случае ошибки
     """
     set_chat_id(chat_id)
     try:
@@ -174,7 +175,7 @@ async def get_tariff_cost(contract_id: str, chat_id: str = 'unknown') -> dict | 
         logger.error(f'Error getting tariff from BGBilling: {e}')
         raise
 
-async def get_news(contract_id: str, chat_id: str = 'unknown') -> dict | None:
+async def get_news(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
     Получает последние новости для договора из BGBilling.
     
@@ -182,7 +183,7 @@ async def get_news(contract_id: str, chat_id: str = 'unknown') -> dict | None:
         contract_id: ID договора
         chat_id: Telegram chat_id для логирования
     Returns:
-        dict or None: Данные новостей или None в случае ошибки
+        Union[dict, None]: Данные новостей или None в случае ошибки
     """
     set_chat_id(chat_id)
     try:
@@ -204,7 +205,7 @@ async def get_news(contract_id: str, chat_id: str = 'unknown') -> dict | None:
         logger.error(f'Error getting news from BGBilling: {e}')
         raise
 
-async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> dict | None:
+async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> Union[dict, None]:
     """
     Получает последние платежи по договору из BGBilling.
     
@@ -212,7 +213,7 @@ async def get_last_payments(contract_id: str, chat_id: str = 'unknown') -> dict 
         contract_id: ID договора
         chat_id: Telegram chat_id для логирования
     Returns:
-        dict or None: Данные о платежах или None в случае ошибки
+        Union[dict, None]: Данные о платежах или None в случае ошибки
     """
     set_chat_id(chat_id)
     try:
