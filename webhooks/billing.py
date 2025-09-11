@@ -1,7 +1,7 @@
 from aiohttp import web
 import asyncio
 
-from db import get_chat_id_by_contract_id, get_all_chat_ids
+from db.users import get_chat_id_by_contract_id, get_all_chat_ids
 from logger import logger, set_chat_id
 from config import BILLING_API_TOKEN
 
