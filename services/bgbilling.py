@@ -189,7 +189,11 @@ async def get_payments(contract_id: str, limit: int = 3) -> Optional[List[Dict]]
                     data = await response.json()
                     if data.get("status") == "Ok":
                         return [
-                            {"date": p.get("date"), "sum": p.get("sum"), "type": p.get("typeTitle")}
+                            {
+                                "date": p.get("date"), 
+                                "sum": p.get("sum"), 
+                                "type": p.get("typeTitle")
+                            }
                             for p in data.get("contractPayments", [])
                         ]
                     return None

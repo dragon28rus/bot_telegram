@@ -18,13 +18,15 @@ async def get_user_tariff(message: Message):
         return
 
     try:
-        data = await get_tariff_plan(user["contract_id"])
-        plans = data.get("contractTarifPlans", [])
-        if plans:
-            title = plans[0].get("title", "—")
-            date_from = plans[0].get("dateFrom", "")
-            date_to = plans[0].get("dateTo", "")
-            await message.answer(f"📊 Ваш тариф: <b>{title}</b>\nАктивен с {date_from}</b>\nпо {date_to}")
+        tariff = await get_tariff_plan(user["contract_id"])
+        if tariff:
+            title = tariff.get("title", "—")
+            date_from = tariff.get("dateFrom", "")
+            date_to = tariff.get("dateTo", "")
+            text = f"📊 Ваш тариф: <b>{title}</b>\nАктивен с {date_from}"
+            if date_to:
+                text += f"\nпо {date_to}"
+            await message.answer(text)
         else:
             await message.answer("⚠️ Не удалось получить тариф.")
     except Exception as e:
