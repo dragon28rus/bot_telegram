@@ -45,3 +45,16 @@ async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional
         """, (support_message_id,))
         row = await cursor.fetchone()
         return row[0] if row else None
+    
+async def get_support_message_id_by_admin_message_id(admin_message_id: int):
+    """
+    Возвращает support_message_id (исходное сообщение пользователя),
+    связанное с admin_message_id (ответ оператора).
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT support_message_id FROM support WHERE admin_message_id = ?",
+            (admin_message_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
