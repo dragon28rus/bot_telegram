@@ -17,6 +17,7 @@ async def init_support_table() -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_chat_id TEXT NOT NULL,
                 support_message_id INTEGER NOT NULL,
+                admin_message_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -24,9 +25,7 @@ async def init_support_table() -> None:
 
 
 async def save_support_request(user_chat_id: str, support_message_id: int) -> None:
-    """
-    Сохраняет обращение пользователя в таблицу support_requests.
-    """
+    """Сохраняет обращение пользователя в таблицу support_requests."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "INSERT INTO support_requests (user_chat_id, support_message_id) VALUES (?, ?)",
@@ -36,9 +35,7 @@ async def save_support_request(user_chat_id: str, support_message_id: int) -> No
 
 
 async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[str]:
-    """
-    Возвращает chat_id пользователя по message_id в чате поддержки.
-    """
+    """Возвращает chat_id пользователя по message_id в чате поддержки."""
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
             "SELECT user_chat_id FROM support_requests WHERE support_message_id = ?",
@@ -67,11 +64,13 @@ async def get_last_support_message_id(user_chat_id: str) -> Optional[int]:
             row = await cursor.fetchone()
             return row[0] if row else None
 
+
 async def link_admin_message(support_message_id: int, admin_message_id: int) -> None:
     """Привязка сообщения админа к тикету"""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "UPDATE support SET admin_message_id = ? WHERE id = ?",
+            "UPDATE support_requests SET admin_message_id = ? WHERE support_message_id = ?",
             (admin_message_id, support_message_id)
         )
         await db.commit()
+5

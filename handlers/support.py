@@ -16,14 +16,14 @@ router = Router()
 class SupportStates(StatesGroup):
     waiting_for_message = State()
 
-
-# Пользователь нажал кнопку "🆘 Техподдержка"
+# Обработка кнопки "Техподдержка"
 @router.message(F.text == "Техподдержка")
-async def support_request_button(message: Message, state: FSMContext):
-    logger.info(f"Пользователь {message.chat.id} нажал кнопку 🆘 Техподдержка")
-    await message.answer("Опишите вашу проблему, оператор свяжется с вами.")
-    await state.set_state(SupportStates.waiting_for_message)
-
+async def support_button_handler(message: Message):
+    chat_id = message.chat.id
+    logger.debug(f"[support_button_handler] Пользователь {chat_id} нажал кнопку 'Техподдержка'")
+    await message.answer(
+        "🆘 Пожалуйста, опишите вашу проблему, и оператор техподдержки свяжется с вами."
+    )
 
 # Пользователь ввёл команду /support
 @router.message(Command("support"))
