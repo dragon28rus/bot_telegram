@@ -55,17 +55,17 @@ async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str]
         await db.commit()
 
 
-async def get_user_by_chat_id(chat_id: str) -> Optional[Tuple[str, str, Optional[str]]]:
+async def get_user_by_chat_id(chat_id: str) -> Optional[dict]:
     """
-    Получает пользователя по chat_id.
-    Возвращает (chat_id, contract_id, contract_title) или None.
+    Возвращает пользователя по chat_id в виде словаря.
     """
     async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute(
-            "SELECT chat_id, contract_id, contract_title FROM users WHERE chat_id = ?",
-            (chat_id,)
-        ) as cursor:
-            return await cursor.fetchone()
+        db.row_factory = aiosqlite.Row  # позволяет обращаться к колонкам по имени
+        cursor = await db.execute("SELECT * FROM users WHERE chat_id = ?", (chat_id,))
+        row = await cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
 
 
 async def get_contract_id_by_chat_id(chat_id: str) -> Optional[str]:
