@@ -4,6 +4,7 @@ from aiogram.types import Message
 from db.users import get_user_by_chat_id
 from services.bgbilling import get_news
 from bs4 import BeautifulSoup
+from logger import logger
 
 router = Router()
 
@@ -35,7 +36,14 @@ async def cmd_news(message: Message):
             await message.answer("Новости не найдены.")
             return
 
-        for news in news_data["newsList"][:5]:  # ограничим до 5 последних
+        news_list = news_data["newsList"]
+
+        # сортировка по дате (свежие первыми)
+        news_list.sort(key=lambda n: n.get("date", ""), reverse=True)
+
+        logger.debug(f"[cmd_news] Получено {len(news_list)} новостей, показываем первые 3")
+
+        for news in news_list[:3]:
             title = news.get("title", "Без названия")
             date = news.get("date", "")
             body = clean_html(news.get("body", ""))
@@ -44,5 +52,5 @@ async def cmd_news(message: Message):
             await message.answer(text, parse_mode="HTML")
 
     except Exception as e:
+        logger.error(f"[cmd_news] Ошибка при получении новостей: {e}")
         await message.answer("Ошибка при получении новостей.")
-        raise e
