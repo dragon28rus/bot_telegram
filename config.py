@@ -31,3 +31,7 @@ LOG_FILE = os.getenv("LOG_FILE", "bot.log")
 
 # --- Admins ---
 ADMIN_CHAT_IDS = [x.strip() for x in os.getenv("ADMIN_CHAT_IDS", "").split(",") if x.strip()]
+
+# Телефоны операторов (для кнопок звонка)
+SUPPORT_PHONE = os.getenv("SUPPORT_PHONE", "")
+BILLING_PHONE = os.getenv("BILLING_PHONE", "")
