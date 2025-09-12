@@ -70,7 +70,7 @@ async def process_support_message(message: Message, state: FSMContext):
 
     await state.clear()
 
-
+'''
 @router.message(F.reply_to_message, F.chat.id == SUPPORT_CHAT_ID)
 async def process_operator_reply(message: Message):
     """Ответ от оператора приходит в reply на сообщение пользователя"""
@@ -85,3 +85,24 @@ async def process_operator_reply(message: Message):
         elif message.document:
             await message.bot.send_document(chat_id, message.document.file_id,
                                             caption=f"💬 Ответ оператора\n{message.caption or ''}")
+'''
+
+# --- Обработка ответа от оператора
+@router.message(F.reply_to_message, F.chat.id == SUPPORT_CHAT_ID)
+async def process_admin_reply(message: Message):
+    reply_to_id = message.reply_to_message.message_id
+    logging.debug(f"[support] Ответ оператора. reply_to_id={reply_to_id}, message_id={message.message_id}")
+
+    user_chat_id = await get_chat_id_by_support_message_id(reply_to_id)
+    if not user_chat_id:
+        logging.warning(f"[support] Не найден chat_id по support_message_id={reply_to_id}")
+        return
+
+    try:
+        text = f"✉️ Ответ от поддержки:\n{message.text or '[медиа]'}"
+        await bot.send_message(chat_id=user_chat_id, text=text)
+        logging.info(f"[support] Ответ доставлен пользователю chat_id={user_chat_id}")
+
+        await link_admin_message(reply_to_id, message.message_id)
+    except Exception as e:
+        logging.error(f"[support] Ошибка при отправке ответа пользователю: {e}")
