@@ -39,7 +39,7 @@ async def cmd_news(message: Message):
         await message.answer("Новости доступны только авторизованным пользователям.")
         return
 
-    contract_id = user[1]
+    contract_id = user.get("contract_id")
     logger.debug(f"[get_news] Пользователь {chat_id}, contract_id={contract_id}")
 
     try:

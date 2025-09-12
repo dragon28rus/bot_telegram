@@ -3,3 +3,4 @@ aiohttp>=3.8.0
 aiosqlite
 python-dotenv>=0.20.0
 html2text==2020.1.16
+beautifulsoup4>=4.12.0
