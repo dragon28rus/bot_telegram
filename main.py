@@ -3,6 +3,7 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiohttp import web
+from aiohttp.web_middlewares import middleware
 
 from config import BOT_TOKEN, BILLING_WEBHOOK_PORT
 from logger import logger
@@ -11,8 +12,6 @@ from webhooks.billing import handle_billing_notification, handle_broadcast_notif
 from db.users import init_users_table
 from db.support import init_support_table
 from keyboards import main_menu
-
-
 
 async def main():
     # --- инициализация базы данных ---
@@ -61,6 +60,19 @@ async def main():
         dp.start_polling(bot),
         web._run_app(app, host="0.0.0.0", port=BILLING_WEBHOOK_PORT)
     )
+
+    @middleware
+    async def error_middleware(request, handler):
+        try:
+            return await handler(request)
+        except web.HTTPException as ex:
+            raise
+        except Exception as e:
+            logger.warning(f"⚠️ Нераспознанный запрос: {request.method} {request.path} - {e}")
+            return web.Response(status=400, text="Bad Request")
+
+    def setup_middlewares(app: web.Application):
+       app.middlewares.append(error_middleware)
 
 
 if __name__ == "__main__":

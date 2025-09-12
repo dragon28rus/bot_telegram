@@ -169,7 +169,6 @@ async def get_news(contract_id: str) -> Union[dict, None]:
     finally:
         await asyncio.sleep(0.05)
 
-
 async def get_payments(contract_id: str, limit: int = 3) -> Optional[List[Dict]]:
     """Получает последние платежи по договору."""
     url = f"{BGBILLING_API_URL}/jsonWebApi/lastContractPayments"
