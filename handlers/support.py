@@ -17,7 +17,7 @@ def short_text(text: str, limit: int = 50) -> str:
 
 
 # === Пользователь пишет в поддержку ===
-@router.message(F.text == "🆘 Техподдержка")
+@router.message(F.text.in_(["🆘 Техподдержка", "/support"]))
 async def support_request(message: Message):
     chat_id = str(message.chat.id)
     text = message.text
