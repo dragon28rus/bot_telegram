@@ -20,10 +20,10 @@ async def init_support_table():
 
 async def save_support_request(
     chat_id: int,
-    contract_title: str | None,
+    contract_title: Optional[str],
     support_message_id: int,
-    admin_message_id: int | None,
-    message_text: str | None
+    admin_message_id: int,
+    message_text: Optional[str]
 ):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
