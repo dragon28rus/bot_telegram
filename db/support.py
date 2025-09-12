@@ -17,6 +17,7 @@ async def init_support_table() -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_chat_id TEXT NOT NULL,
                 support_message_id INTEGER NOT NULL,
+                support_message TEXT NOT NULL,
                 admin_message_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -24,18 +25,29 @@ async def init_support_table() -> None:
         await db.commit()
 
 
-async def save_support_request(user_chat_id: str, support_message_id: int) -> None:
-    """Сохраняет обращение пользователя в таблицу support_requests."""
+async def save_support_request(user_chat_id: str, support_message: str) -> int:
+    """Сохраняет обращение пользователя и возвращает ID записи."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "INSERT INTO support_requests (user_chat_id, support_message_id, support_message) VALUES (?, ?, ?)",
+            (user_chat_id, 0, support_message),  # временно support_message_id=0, обновим позже
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def update_support_message_id(request_id: int, support_message_id: int) -> None:
+    """Обновляет support_message_id после отправки в чат поддержки."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "INSERT INTO support_requests (user_chat_id, support_message_id) VALUES (?, ?)",
-            (user_chat_id, support_message_id),
+            "UPDATE support_requests SET support_message_id = ? WHERE id = ?",
+            (support_message_id, request_id)
         )
         await db.commit()
 
 
 async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[str]:
-    """Возвращает chat_id пользователя по message_id в чате поддержки."""
+    """Возвращает user_chat_id по message_id в чате поддержки."""
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
             "SELECT user_chat_id FROM support_requests WHERE support_message_id = ?",
@@ -46,10 +58,7 @@ async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional
 
 
 async def get_last_support_message_id(user_chat_id: str) -> Optional[int]:
-    """
-    Возвращает последний message_id в чате поддержки для данного пользователя.
-    Нужно для отправки ответа оператором.
-    """
+    """Возвращает последний support_message_id в чате поддержки для данного пользователя."""
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
             """
@@ -73,4 +82,3 @@ async def link_admin_message(support_message_id: int, admin_message_id: int) -> 
             (admin_message_id, support_message_id)
         )
         await db.commit()
-5
