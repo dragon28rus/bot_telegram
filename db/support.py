@@ -1,5 +1,5 @@
 import aiosqlite
-from db import DB_PATH
+from config import DB_PATH  # вместо from db import DB_PATH
 
 async def init_support_table():
     async with aiosqlite.connect(DB_PATH) as db:
