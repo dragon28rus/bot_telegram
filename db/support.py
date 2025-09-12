@@ -2,6 +2,7 @@
 import aiosqlite
 import os
 from config import DB_PATH
+from typing import Optional
 
 async def init_support_table() -> None:
     """Создание таблицы для хранения обращений в техподдержку."""
@@ -33,7 +34,7 @@ async def save_support_request(user_chat_id: str, support_message_id: int) -> No
         await db.commit()
 
 
-async def get_chat_id_by_support_message_id(support_message_id: int) -> str | None:
+async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[str]:
     """
     Возвращает chat_id пользователя по message_id в чате поддержки.
     """
