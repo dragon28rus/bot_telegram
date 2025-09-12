@@ -18,7 +18,7 @@ class SupportStates(StatesGroup):
 
 
 # Пользователь нажал кнопку "🆘 Техподдержка"
-@router.message(F.text == "🆘 Техподдержка")
+@router.message(F.text == "Техподдержка")
 async def support_request_button(message: Message, state: FSMContext):
     logger.info(f"Пользователь {message.chat.id} нажал кнопку 🆘 Техподдержка")
     await message.answer("Опишите вашу проблему, оператор свяжется с вами.")
@@ -45,8 +45,8 @@ async def process_support_message(message: Message, state: FSMContext):
     # Получаем договор, если есть
     user = await get_user_by_chat_id(str(chat_id))
     contract_info = ""
-    if user and user[2]:  # user = (chat_id, contract_id, contract_title)
-        contract_info = f"\n📄 Договор: {user[2]} (ID {user[1]})"
+    if user and user.get("contract_title"):
+        contract_info = f"\n📄 Договор: {user['contract_title']} (ID {user['contract_id']})"
 
     logger.info(f"Сохранен запрос в техподдержку от {chat_id}, ID {support_message_id}")
 

@@ -21,7 +21,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
             [KeyboardButton(text="💳 Последние платежи")],
             [KeyboardButton(text="💵 Оплатить услуги")],
             [KeyboardButton(text="📰 Новости")],
-            [KeyboardButton(text="🆘 Техподдержка")],
+            [KeyboardButton(text="Техподдержка")],
             [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
             [KeyboardButton(text="📞 Позвонить в техподдержку")],
             [KeyboardButton(text="🔓 Отвязать договор")],
@@ -30,7 +30,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
         # Неавторизованный пользователь
         keyboard = [
             [KeyboardButton(text="🔑 Авторизоваться")],
-            [KeyboardButton(text="🆘 Техподдержка")],
+            [KeyboardButton(text="Техподдержка")],
             [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
             [KeyboardButton(text="📞 Позвонить в техподдержку")],
         ]
