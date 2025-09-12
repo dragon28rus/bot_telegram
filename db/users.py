@@ -26,7 +26,6 @@ async def init_users_table() -> None:
         await db.execute(CREATE_TABLE_SQL)
         await db.commit()
 
-
 async def add_user(chat_id: int, contract_id: int, contract_title: str) -> None:
     """
     Добавляет или обновляет пользователя в таблице users.
@@ -43,7 +42,6 @@ async def add_user(chat_id: int, contract_id: int, contract_title: str) -> None:
             (chat_id, contract_id, contract_title)
         )
         await db.commit()
-
 
 async def get_user_by_chat_id(chat_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -64,7 +62,6 @@ async def get_user_by_chat_id(chat_id: int) -> Optional[Dict[str, Any]]:
             }
         return None
 
-
 async def delete_user(chat_id: int) -> None:
     """
     Удаляет пользователя по chat_id.
@@ -72,7 +69,6 @@ async def delete_user(chat_id: int) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM users WHERE chat_id=?", (chat_id,))
         await db.commit()
-
 
 async def get_all_chat_ids() -> List[int]:
     """
@@ -82,3 +78,16 @@ async def get_all_chat_ids() -> List[int]:
         cursor = await db.execute("SELECT chat_id FROM users")
         rows = await cursor.fetchall()
         return [row[0] for row in rows]
+
+async def get_chat_id_by_contract_id(contract_id: int) -> Optional[int]:
+    """
+    Получает chat_id по contract_id.
+    Возвращает None, если пользователь не найден.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT chat_id FROM users WHERE contract_id=?",
+            (contract_id,)
+        )
+        row = await cursor.fetchone()
+        return row[0] if row else None
