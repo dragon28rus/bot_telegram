@@ -1,52 +1,30 @@
-# handlers/tariff.py
-from aiogram import Router, types, F
+from aiogram import Router
+from aiogram.types import Message
 
-from db.users import get_user_by_chat_id
 from services.bgbilling import get_tariff_plan
-from logger import logger, set_chat_id
-from handlers.start import main_menu
+from db.users import get_user_by_chat_id
+from keyboards.main_menu import get_main_menu
+from logger import logger
 
 router = Router()
 
 
-@router.message(F.text == "📊 Текущий тариф")
-async def show_tariff(message: types.Message):
+@router.message(lambda msg: msg.text == "📊 Текущий тариф")
+async def get_user_tariff(message: Message):
     chat_id = message.chat.id
-    set_chat_id(str(chat_id))
-
     user = await get_user_by_chat_id(chat_id)
-    if not user:
-        await message.answer(
-            "❌ Информация о тарифе доступна только для авторизованных пользователей.\n"
-            "Пожалуйста, авторизуйтесь.",
-            reply_markup=await main_menu(chat_id),
-        )
+
+    if not user or not user.get("contract_id"):
+        await message.answer("❌ Сначала авторизуйтесь.", reply_markup=await get_main_menu(chat_id))
         return
 
-    contract_id = user["contract_id"]
-
     try:
-        tariff_data = await get_tariff_plan(contract_id)
-
-        if not tariff_data or "tarifs" not in tariff_data:
-            await message.answer("ℹ️ Информация о тарифах отсутствует.", reply_markup=await main_menu(chat_id))
-            return
-
-        tarifs = tariff_data.get("tarifs", [])
-        if not tarifs:
-            await message.answer("ℹ️ У вас нет активных тарифных планов.", reply_markup=await main_menu(chat_id))
-            return
-
-        # Берём первый активный тариф
-        tariff = tarifs[0]
-        title = tariff.get("title", "Без названия")
-        cost = tariff.get("cost", "Неизвестно")
-
-        await message.answer(
-            f"📊 Ваш тарифный план: <b>{title}</b>\n💵 Стоимость: {cost}",
-            reply_markup=await main_menu(chat_id),
-        )
-        logger.info(f"Отправлен тариф chat_id={chat_id}, contract_id={contract_id}")
+        data = await get_tariff_plan(user["contract_id"])
+        if data:
+            plan = data.get("title", "неизвестно")
+            await message.answer(f"📊 Ваш тарифный план: <b>{plan}</b>")
+        else:
+            await message.answer("⚠️ Не удалось получить тарифный план.")
     except Exception as e:
-        await message.answer("⚠ Ошибка при получении тарифа. Попробуйте позже.", reply_markup=await main_menu(chat_id))
-        logger.error(f"Ошибка при получении тарифа chat_id={chat_id}, contract_id={contract_id}: {e}")
+        logger.error(f"Ошибка получения тарифа chat_id={chat_id}: {e}")
+        await message.answer("⚠️ Ошибка при получении тарифа.")

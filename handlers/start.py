@@ -1,56 +1,42 @@
-# handlers/start.py
 from aiogram import Router, types
 from aiogram.filters import CommandStart
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from config import SUPPORT_PHONE, BILLING_PHONE
+from aiogram.types import Message
+
+from keyboards.main_menu import get_main_menu
 from db.users import get_user_by_chat_id
+from logger import logger
 
 router = Router()
 
 
-async def main_menu(chat_id: int) -> types.ReplyKeyboardMarkup:
+@router.message(CommandStart())
+async def cmd_start(message: Message):
     """
-    Главное меню бота с динамическими кнопками:
-    - Если пользователь авторизован → кнопки баланса, тарифа, платежей и отвязки
-    - Если нет → кнопка авторизации
-    - Новости и звонки доступны всегда
+    Обработчик команды /start.
+    Отправляет пользователю приветствие и динамическое главное меню.
     """
-    kb = ReplyKeyboardBuilder()
+    chat_id = message.chat.id
 
+    # Логируем запуск
+    logger.info(f"Пользователь {chat_id} вызвал /start")
+
+    # Проверяем есть ли запись о пользователе в БД
     user = await get_user_by_chat_id(chat_id)
 
-    if user:
-        # Кнопки для авторизованных
-        kb.button(text="🔓 Отвязать договор")
-        kb.button(text="💰 Узнать баланс")
-        kb.button(text="📊 Текущий тариф")
-        kb.button(text="💳 Последние платежи")
-        kb.button(text="💵 Оплатить услуги")
+    if user and user.get("contract_id"):
+        text = (
+            f"👋 Добро пожаловать снова!\n"
+            f"Ваш договор: <b>{user['contract_id']}</b>\n\n"
+            f"Выберите действие:"
+        )
     else:
-        # Если нет договора — только авторизация
-        kb.button(text="🔑 Авторизоваться")
+        text = (
+            "👋 Добро пожаловать!\n"
+            "Для доступа к балансу и тарифам необходимо авторизоваться.\n\n"
+            "Выберите действие:"
+        )
 
-    # Кнопки, доступные всем
-    kb.button(text="📰 Новости")
-    kb.button(text="🛠 Техподдержка")
-    kb.button(text="📞 Абон. отдел")
-    kb.button(text="☎ Техподдержка")
+    # Динамически формируем меню
+    keyboard = await get_main_menu(chat_id)
 
-    # Раскладываем по 2 кнопки в ряд
-    kb.adjust(2)
-    return kb.as_markup(resize_keyboard=True)
-
-
-@router.message(CommandStart())
-async def cmd_start(message: types.Message):
-    """
-    Обработка команды /start.
-    Показывает главное меню (динамически).
-    """
-    await message.answer(
-        text=(
-            "👋 Добро пожаловать в бот компании *Кабельные системы*!\n\n"
-            "Выберите нужное действие из меню ниже 👇"
-        ),
-        reply_markup=await main_menu(message.chat.id)
-    )
+    await message.answer(text, reply_markup=keyboard)

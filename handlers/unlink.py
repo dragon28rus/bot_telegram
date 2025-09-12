@@ -1,26 +1,27 @@
-# handlers/unlink.py
-from aiogram import Router, types, F
+from aiogram import Router
+from aiogram.types import Message
 
-from db.users import get_user_by_chat_id, delete_user
-from logger import logger, set_chat_id
-from handlers.start import main_menu
+from db.users import remove_user, get_user_by_chat_id
+from keyboards.main_menu import get_main_menu
+from logger import logger
 
 router = Router()
 
 
-@router.message(F.text == "🔓 Отвязать договор")
-async def unlink_contract(message: types.Message):
+@router.message(lambda msg: msg.text == "🔓 Отвязать договор")
+async def unlink_contract(message: Message):
+    """
+    Отвязка договора: удаляем пользователя из БД
+    """
     chat_id = message.chat.id
-    set_chat_id(str(chat_id))
     user = await get_user_by_chat_id(chat_id)
 
-    if not user:
-        await message.answer("ℹ️ У вас нет привязанного договора.", reply_markup=await main_menu(chat_id))
-        return
-
-    await delete_user(chat_id)
-    await message.answer(
-        "🔓 Договор отвязан. Вы можете авторизоваться снова.",
-        reply_markup=await main_menu(chat_id)
-    )
-    logger.info(f"Пользователь {chat_id} отвязал договор")
+    if user and user.get("contract_id"):
+        await remove_user(chat_id)
+        logger.info(f"Договор отвязан: chat_id={chat_id}, contract_id={user['contract_id']}")
+        await message.answer(
+            "🔓 Договор успешно отвязан.\nТеперь вы можете авторизоваться снова.",
+            reply_markup=await get_main_menu(chat_id)
+        )
+    else:
+        await message.answer("❌ У вас нет активной привязки договора.", reply_markup=await get_main_menu(chat_id))
