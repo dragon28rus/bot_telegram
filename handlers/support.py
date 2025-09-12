@@ -25,8 +25,9 @@ async def start_support(message: Message, state: FSMContext):
 
 @router.message(SupportStates.waiting_for_message)
 async def process_support_message(message: Message, state: FSMContext):
-    user = await get_user_by_chat_id(message.chat.id)
-    contract_title = user[2] if user and len(user) >= 3 and user[2] else None
+    chat_id = message.chat.id
+    user = await get_user_by_chat_id(chat_id)
+    contract_title = user.get("contract_title") if user else None
 
     # определяем тип сообщения
     if message.text:
