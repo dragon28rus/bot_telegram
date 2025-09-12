@@ -9,7 +9,7 @@ from logger import logger
 REQUEST_TIMEOUT = 5
 
 
-async def authenticate(contract_number: str, password: str) -> Union[dict, None]:
+async def authenticate(contract_number: str, password: str) -> Optional[dict]:
     """Авторизация пользователя в BGBilling."""
     url = f"{BGBILLING_API_URL}/jsonWebApi/login"
     params = {"login": contract_number, "password": password, "midAuth": 0}
@@ -19,13 +19,18 @@ async def authenticate(contract_number: str, password: str) -> Union[dict, None]
         async with aiohttp.ClientSession(
             auth=aiohttp.BasicAuth(*BGBILLING_AUTH),
             timeout=ClientTimeout(total=REQUEST_TIMEOUT),
-            connector=aiohttp.TCPConnector(ssl=False)  # игнор SSL если самоподписанный сертификат
+            connector=aiohttp.TCPConnector(ssl=False)
         ) as session:
             async with session.get(url, params=params) as response:
                 text = await response.text()
                 logger.debug(f"[authenticate] Ответ {response.status}: {text}")
                 if response.status == 200:
-                    return await response.json()
+                    data = await response.json()
+                    if data.get("status") == "Ok":
+                        return {
+                            "contract_id": data.get("contractId"),
+                            "contract_title": data.get("contractTitle")
+                        }
                 return None
     except aiohttp.ClientTimeout:
         logger.error("[authenticate] Таймаут")

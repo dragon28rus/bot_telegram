@@ -1,4 +1,4 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -45,7 +45,6 @@ async def process_contract_id(message: Message, state: FSMContext):
     await message.answer("Введите пароль статистики:")
     await state.set_state(AuthStates.waiting_for_password)
 
-
 @router.message(AuthStates.waiting_for_password)
 async def process_password(message: Message, state: FSMContext):
     """
@@ -61,7 +60,8 @@ async def process_password(message: Message, state: FSMContext):
 
         if isinstance(result, dict) and result.get("status") == "Ok":
             # Успешная авторизация
-            await add_user(chat_id, contract_id)
+            contract_title = result.get("contractTitle")
+            await add_user(chat_id, contract_id, contract_title)
             logger.info(f"Авторизация успешна: chat_id={chat_id}, contract_id={contract_id}")
 
             # показываем динамическое меню

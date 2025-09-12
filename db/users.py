@@ -3,7 +3,6 @@ import os
 from typing import Optional, List, Tuple
 from config import DB_PATH
 
-
 async def init_users_table() -> None:
     """
     Создаёт таблицу users и индексы, если они ещё не существуют.
@@ -26,8 +25,6 @@ async def init_users_table() -> None:
         await db.execute("CREATE INDEX IF NOT EXISTS idx_users_contract_id ON users (contract_id)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_users_chat_id ON users (chat_id)")
         await db.commit()
-
-
 
 async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str] = None) -> None:
     """
@@ -54,19 +51,20 @@ async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str]
 
         await db.commit()
 
-
 async def get_user_by_chat_id(chat_id: str) -> Optional[dict]:
     """
     Возвращает пользователя по chat_id в виде словаря.
     """
     async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row  # позволяет обращаться к колонкам по имени
-        cursor = await db.execute("SELECT * FROM users WHERE chat_id = ?", (chat_id,))
+        cursor = await db.execute("SELECT chat_id, contract_id, contract_title FROM users WHERE chat_id = ?", (chat_id,))
         row = await cursor.fetchone()
         if row:
-            return dict(row)
+            return {
+                "chat_id": row[0],
+                "contract_id": row[1],
+                "contract_title": row[2],
+            }
         return None
-
 
 async def get_contract_id_by_chat_id(chat_id: str) -> Optional[str]:
     """
@@ -95,7 +93,6 @@ async def remove_user(chat_id: str) -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM users WHERE chat_id = ?", (chat_id,))
         await db.commit()
-
 
 async def get_all_chat_ids() -> List[str]:
     """
