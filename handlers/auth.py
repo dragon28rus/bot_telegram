@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 
 from db.users import add_user
 from services.bgbilling import authenticate
-from logger import logger
+from logger import logger, set_chat_id
 from handlers.start import main_menu
 
 router = Router()
@@ -40,6 +40,7 @@ async def auth_get_password(message: types.Message, state: FSMContext):
     contract_id = user_data.get("contract_id")
     password = message.text
     chat_id = message.chat.id
+    set_chat_id(str(chat_id))
 
     try:
         auth_response = await authenticate(contract_id, password)

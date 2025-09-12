@@ -1,7 +1,11 @@
 import logging
 import os
+import contextvars
 from logging.handlers import RotatingFileHandler
 from config import LOG_LEVEL, LOG_DIR, LOG_FILE
+
+# ContextVar для хранения chat_id
+_current_chat_id: contextvars.ContextVar[str] = contextvars.ContextVar("chat_id", default="unknown")
 
 # Убедимся, что директория для логов существует
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -16,14 +20,19 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class ChatIDFilter(logging.Filter):
     """
-    Добавляет поле chat_id в записи лога (по умолчанию 'unknown'),
-    чтобы не падал форматтер.
+    Добавляет поле chat_id в записи лога
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
-        if not hasattr(record, "chat_id"):
-            record.chat_id = "unknown"
+        record.chat_id = _current_chat_id.get("unknown")
         return True
+
+
+def set_chat_id(chat_id: str) -> None:
+    """
+    Устанавливает текущий chat_id для логов
+    """
+    _current_chat_id.set(chat_id)
 
 
 def get_logger(name: str = "cable_bot") -> logging.Logger:
@@ -46,7 +55,7 @@ def get_logger(name: str = "cable_bot") -> logging.Logger:
     file_handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
     file_handler.addFilter(ChatIDFilter())
 
-    # Добавляем хендлеры (только если они ещё не добавлены)
+    # Добавляем хендлеры только один раз
     if not logger.handlers:
         logger.addHandler(console_handler)
         logger.addHandler(file_handler)
@@ -54,5 +63,5 @@ def get_logger(name: str = "cable_bot") -> logging.Logger:
     return logger
 
 
-# Глобальный логгер для проекта
+# Глобальный логгер
 logger = get_logger()

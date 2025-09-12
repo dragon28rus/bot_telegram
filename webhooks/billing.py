@@ -1,96 +1,66 @@
 from aiohttp import web
-import asyncio
-
+from aiogram import Bot
+from config import BOT_TOKEN
 from db.users import get_chat_id_by_contract_id, get_all_chat_ids
-from logger import logger, set_chat_id
-from config import BILLING_API_TOKEN
+from logger import logger, set_chat_id  # 👈 добавили set_chat_id
+
+bot = Bot(token=BOT_TOKEN)
 
 
-def _check_auth(request):
-    """Check Authorization header for billing API."""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or auth_header != f"Bearer {BILLING_API_TOKEN}":
-        logger.error("Unauthorized billing notification attempt")
-        return False
-    return True
-
-
-async def handle_billing_notification(request, bot):
+async def handle_billing_notification(request: web.Request) -> web.Response:
     """
-    Обрабатывает уведомления от биллинга для конкретного пользователя по contract_id.
-    Требует авторизацию через заголовок Authorization: Bearer <token>.
+    Обработка уведомления от биллинга:
+    передаётся contract_id + сообщение, бот отправляет пользователю.
     """
-    set_chat_id("system")
+    data = await request.json()
+    contract_id = data.get("contract_id")
+    message = data.get("message")
 
-    if not _check_auth(request):
-        return web.json_response({"status": "error", "message": "Unauthorized"}, status=401)
+    # Привязываем chat_id для логов
+    set_chat_id(f"contract:{contract_id}")
+
+    if not contract_id or not message:
+        logger.error("Некорректные данные от биллинга")
+        return web.json_response({"status": "error", "reason": "invalid data"}, status=400)
+
+    chat_id = await get_chat_id_by_contract_id(contract_id)
+    if not chat_id:
+        logger.warning(f"Не найден chat_id для договора {contract_id}")
+        return web.json_response({"status": "error", "reason": "user not found"}, status=404)
 
     try:
-        data = await request.json()
-        contract_id = data.get("contract_id")
-        message = data.get("message")
-
-        if not contract_id or not message:
-            logger.error("Invalid billing notification: missing contract_id or message")
-            return web.json_response(
-                {"status": "error", "message": "Missing contract_id or message"}, status=400
-            )
-
-        chat_id = await get_chat_id_by_contract_id(contract_id)
-        if chat_id:
-            set_chat_id(chat_id)
-            await bot.send_message(chat_id, f"Уведомление от биллинга: {message}")
-            logger.info("Billing notification sent to user")
-            return web.json_response({"status": "ok"})
-        else:
-            logger.warning("No chat_id found for contract_id")
-            return web.json_response(
-                {"status": "error", "message": "No user found for contract_id"}, status=404
-            )
-    except Exception as e:
-        logger.error(f"Error processing billing notification: {e}")
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
-
-
-async def handle_broadcast_notification(request, bot):
-    """
-    Обрабатывает уведомления от биллинга для отправки всем подписчикам.
-    Требует авторизацию через заголовок Authorization: Bearer <token>.
-    """
-    set_chat_id("system")
-
-    if not _check_auth(request):
-        return web.json_response({"status": "error", "message": "Unauthorized"}, status=401)
-
-    try:
-        data = await request.json()
-        message = data.get("message")
-        if not message:
-            logger.error("Invalid broadcast notification: missing message")
-            return web.json_response(
-                {"status": "error", "message": "Missing message"}, status=400
-            )
-
-        chat_ids = await get_all_chat_ids()
-        if not chat_ids:
-            logger.warning("No subscribers found for broadcast")
-            return web.json_response(
-                {"status": "error", "message": "No subscribers found"}, status=404
-            )
-
-        async def _send(chat_id):
-            try:
-                set_chat_id(chat_id)
-                await bot.send_message(chat_id, f"Уведомление от биллинга: {message}")
-                logger.info(f"Broadcast notification sent to user with chat_id: {chat_id}")
-            except Exception as e:
-                logger.error(f"Error sending broadcast to user with chat_id {chat_id}: {e}")
-
-        await asyncio.gather(*[_send(chat_id) for chat_id in chat_ids])
-
-        set_chat_id("system")
-        logger.info("Broadcast notification sent to all subscribers")
+        await bot.send_message(chat_id, message)
+        logger.info(f"Сообщение передано пользователю {chat_id} по договору {contract_id}")
         return web.json_response({"status": "ok"})
     except Exception as e:
-        logger.error(f"Error processing broadcast notification: {e}")
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+        logger.error(f"Ошибка при отправке сообщения пользователю {chat_id}: {e}")
+        return web.json_response({"status": "error", "reason": str(e)}, status=500)
+
+
+async def handle_broadcast_notification(request: web.Request) -> web.Response:
+    """
+    Обработка рассылки от биллинга:
+    сообщение отправляется всем пользователям.
+    """
+    data = await request.json()
+    message = data.get("message")
+
+    # Привязываем chat_id как broadcast
+    set_chat_id("broadcast")
+
+    if not message:
+        logger.error("Сообщение для рассылки пустое")
+        return web.json_response({"status": "error", "reason": "empty message"}, status=400)
+
+    chat_ids = await get_all_chat_ids()
+    sent, failed = 0, 0
+    for chat_id in chat_ids:
+        try:
+            await bot.send_message(chat_id, message)
+            sent += 1
+        except Exception as e:
+            failed += 1
+            logger.error(f"Ошибка при рассылке пользователю {chat_id}: {e}")
+
+    logger.info(f"Рассылка завершена: успешно={sent}, ошибки={failed}")
+    return web.json_response({"status": "ok", "sent": sent, "failed": failed})

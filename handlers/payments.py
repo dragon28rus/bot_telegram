@@ -3,7 +3,7 @@ from aiogram import Router, types, F
 
 from db.users import get_user_by_chat_id
 from services.bgbilling import get_last_payments
-from logger import logger
+from logger import logger, set_chat_id
 from handlers.start import main_menu
 
 router = Router()
@@ -12,6 +12,7 @@ router = Router()
 @router.message(F.text == "💳 Последние платежи")
 async def show_payments(message: types.Message):
     chat_id = message.chat.id
+    set_chat_id(str(chat_id))
 
     user = await get_user_by_chat_id(chat_id)
     if not user:
