@@ -18,16 +18,23 @@ async def init_support_table():
         """)
         await db.commit()
 
-
-async def save_support_request(user_chat_id: int, contract_title: str, support_message_id: int,
-                               support_message: str, message_type: str = "text") -> int:
+async def save_support_request(
+    chat_id: int,
+    contract_title: str | None,
+    support_message_id: int,
+    admin_message_id: int | None,
+    message_text: str | None
+):
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("""
-            INSERT INTO support (user_chat_id, contract_title, support_message_id, support_message, message_type)
+        await db.execute(
+            """
+            INSERT INTO support (user_chat_id, contract_title, support_message_id, admin_message_id, support_message)
             VALUES (?, ?, ?, ?, ?)
-        """, (user_chat_id, contract_title, support_message_id, support_message, message_type))
+            """,
+            (chat_id, contract_title, support_message_id, admin_message_id, message_text)
+        )
         await db.commit()
-        return cursor.lastrowid
+
 
 
 async def link_admin_message(support_message_id: int, admin_message_id: int):

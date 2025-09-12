@@ -84,10 +84,10 @@ async def forward_to_support(message: types.Message):
 
     # Сохраняем в БД
     await save_support_request(
-        support_message_id=message.message_id,
         chat_id=message.chat.id,
         contract_title=contract_title,
-        message=message.text or message.caption or "<медиа>"
+        support_message_id=message.message_id,
+        message_text=message.text or message.caption or "<медиа>"
     )
     await link_admin_message(message.message_id, sent.message_id)
 
