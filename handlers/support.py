@@ -121,7 +121,7 @@ async def process_user_reply(message: Message):
     support_message_id = await get_support_message_id_by_admin_message_id(reply_id)
 
     if not support_message_id:
-        logging.warning(f"[support] Не найден support_message_id для ответа абонента {chat_id}")
+        logging.warning(f"[support] Не найден support_message_id для ответа абонента {chat_id} c admin_message_id: {reply_id}")
         return
 
     # Получим данные абонента
