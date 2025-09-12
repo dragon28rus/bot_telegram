@@ -6,9 +6,10 @@ from aiohttp import web
 
 from config import BOT_TOKEN, BILLING_WEBHOOK_PORT
 from logger import logger
-from handlers import admin
+from handlers import admin, start, auth, unlink, balance, news
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
+
 
 
 async def main():
@@ -28,7 +29,11 @@ async def main():
 
     # --- подключаем роутеры ---
     dp.include_router(admin.router)
-    # позже сюда добавим остальные: auth, balance, news и т.д.
+    dp.include_router(start.router)
+    dp.include_router(auth.router)
+    dp.include_router(unlink.router)
+    dp.include_router(balance.router)
+    dp.include_router(news.router)
 
     # --- aiohttp сервер для биллинга ---
     app = web.Application()
