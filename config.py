@@ -13,7 +13,7 @@ DB_PATH = os.getenv("DB_PATH", "./data/bot.db")
 
 # --- BGBilling API ---
 BGBILLING_API_URL = os.getenv("BGBILLING_API_URL")
-BGBILLING_AUTH = os.getenv("BGBILLING_AUTH")  # например login:password
+BGBILLING_AUTH = (os.getenv("BGBILLING_USER"), os.getenv("BGBILLING_PASSWORD"))
 BILLING_API_TOKEN = os.getenv("BILLING_API_TOKEN")
 
 # --- Webhook ---
