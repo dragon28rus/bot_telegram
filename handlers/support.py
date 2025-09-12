@@ -106,3 +106,37 @@ async def process_admin_reply(message: Message):
         await link_admin_message(reply_to_id, message.message_id)
     except Exception as e:
         logging.error(f"[support] Ошибка при отправке ответа пользователю: {e}")
+
+# --- абонент отвечает на сообщение оператора ---
+@router.message(F.reply_to_message)
+async def process_user_reply(message: Message):
+    chat_id = message.chat.id
+
+    # Проверим, что это ответ именно на сообщение бота (ответ поддержки)
+    reply_id = message.reply_to_message.message_id
+    logging.debug(f"[support] Абонент {chat_id} ответил на сообщение {reply_id}")
+
+    # Найдём связанный support_message_id по admin_message_id
+    from db.support import get_support_message_id_by_admin_message_id
+    support_message_id = await get_support_message_id_by_admin_message_id(reply_id)
+
+    if not support_message_id:
+        logging.warning(f"[support] Не найден support_message_id для ответа абонента {chat_id}")
+        return
+
+    # Получим данные абонента
+    user = await get_user_by_chat_id(chat_id)
+    contract_title = user[2] if user and len(user) >= 3 and user[2] else "не авторизован"
+
+    # Подготовим сообщение в техподдержку
+    text = (
+        f"📨 Ответ от абонента ({contract_title}):\n"
+        f"{message.text or '[медиа]'}"
+    )
+
+    try:
+        await message.bot.send_message(chat_id=SUPPORT_CHAT_ID, text=text,
+                                       reply_to_message_id=support_message_id)
+        logging.info(f"[support] Ответ абонента {chat_id} переслан оператору")
+    except Exception as e:
+        logging.error(f"[support] Ошибка при пересылке ответа абонента {chat_id}: {e}")
