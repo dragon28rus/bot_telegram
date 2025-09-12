@@ -1,16 +1,15 @@
+from typing import Optional, Dict, Any
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+from logger import logger
 
 from services.bgbilling import authenticate
 from db.users import add_user
 from keyboards.main_menu import get_main_menu
-from logger import logger
 
 router = Router()
-
 
 class AuthStates(StatesGroup):
     waiting_for_contract_id = State()
@@ -48,31 +47,60 @@ async def process_contract_id(message: Message, state: FSMContext):
 @router.message(AuthStates.waiting_for_password)
 async def process_password(message: Message, state: FSMContext):
     """
-    Обработка пароля и попытка авторизации через BGBilling.
+    Обрабатываем введённый пароль:
+      - вызываем authenticate()
+      - корректно извлекаем resolved contract_id и contract_title
+      - сохраняем оба поля в БД
     """
-    user_data = await state.get_data()
-    contract_id = user_data.get("contract_id")
+    data = await state.get_data()
+    contract_input = data.get("contract_id") or data.get("contract")  # что ввёл пользователь
     password = message.text.strip()
-    chat_id = message.chat.id
+    chat_id = str(message.chat.id)
+
+    logger.debug(f"[auth] Попытка авторизации: chat_id={chat_id}, input_contract='{contract_input}'")
 
     try:
-        result = await authenticate(contract_id, password)
+        result: Optional[Dict[str, Any]] = await authenticate(contract_input, password)
 
-        if isinstance(result, dict) and result.get("status") == "Ok":
-            # Успешная авторизация
-            contract_title = result.get("contractTitle")
-            await add_user(chat_id, contract_id, contract_title)
-            logger.info(f"Авторизация успешна: chat_id={chat_id}, contract_id={contract_id}")
+        # Поддерживаем два варианта: когда authenticate вернул 'status' или только нормализованные поля
+        if result is None:
+            logger.warning(f"Ошибка авторизации: chat_id={chat_id}, input='{contract_input}', result=None")
+            await message.answer("❌ Ошибка авторизации. Попробуйте позже.")
+            await state.clear()
+            return
 
-            # показываем динамическое меню
-            keyboard = await get_main_menu(chat_id)
-            await message.answer("✅ Авторизация успешна!", reply_markup=keyboard)
-        else:
-            # Ошибка авторизации
-            logger.warning(f"Ошибка авторизации: chat_id={chat_id}, contract_id={contract_id}, result={result}")
+        # Если API вернул status, смотрим на него
+        if result.get("status") and result.get("status") != "Ok":
+            logger.warning(f"Неверные учётные данные: chat_id={chat_id}, input='{contract_input}', api_status={result.get('status')}")
             await message.answer("❌ Неверный номер договора или пароль.")
+            await state.clear()
+            return
+
+        # получаем resolved ID и title (в приоритете нормализованные ключи)
+        resolved_contract_id = result.get("contract_id") or result.get("contractId")
+        resolved_contract_title = result.get("contract_title") or result.get("contractTitle") or contract_input
+
+        if not resolved_contract_id:
+            # на всякий случай — если ID не пришёл
+            logger.error(f"[auth] Авторизация прошла, но contract_id не найден: chat_id={chat_id}, result={result}")
+            await message.answer("❌ Не удалось определить ID договора после авторизации.")
+            await state.clear()
+            return
+
+        # Сохраняем в БД (contract_id — как строка)
+        await add_user(chat_id, str(resolved_contract_id), resolved_contract_title)
+
+        logger.info(
+            f"Авторизация успешна: chat_id={chat_id}, input='{contract_input}', resolved_contract_id={resolved_contract_id}, "
+            f"resolved_contract_title='{resolved_contract_title}'"
+        )
+
+        # Показать главное меню пользователю
+        keyboard = await get_main_menu(chat_id)
+        await message.answer("✅ Авторизация прошла успешно!", reply_markup=keyboard)
+
     except Exception as e:
-        logger.exception(f"Ошибка авторизации chat_id={chat_id}")
+        logger.exception(f"Ошибка авторизации chat_id={chat_id}: {e}")
         await message.answer("⚠️ Ошибка при попытке авторизации. Попробуйте позже.")
     finally:
         await state.clear()

@@ -9,8 +9,14 @@ from logger import logger
 REQUEST_TIMEOUT = 5
 
 
-async def authenticate(contract_number: str, password: str) -> Optional[dict]:
-    """Авторизация пользователя в BGBilling."""
+async def authenticate(contract_number: str, password: str) -> Optional[Dict[str, Any]]:
+    """
+    Выполняет запрос /jsonWebApi/login и возвращает словарь с:
+      - 'status' (как пришёл в API),
+      - оригинальными ключами 'contractId'/'contractTitle' (если есть),
+      - нормализованными 'contract_id' (str) и 'contract_title'.
+    Это даёт обратно-совместимость для разных хэндлеров.
+    """
     url = f"{BGBILLING_API_URL}/jsonWebApi/login"
     params = {"login": contract_number, "password": password, "midAuth": 0}
     logger.debug(f"[authenticate] Запрос {url} params={params}")
@@ -19,20 +25,35 @@ async def authenticate(contract_number: str, password: str) -> Optional[dict]:
         async with aiohttp.ClientSession(
             auth=aiohttp.BasicAuth(*BGBILLING_AUTH),
             timeout=ClientTimeout(total=REQUEST_TIMEOUT),
-            connector=aiohttp.TCPConnector(ssl=False)
+            connector=aiohttp.TCPConnector(ssl=False)  # если у вас self-signed, иначе можно убрать
         ) as session:
             async with session.get(url, params=params) as response:
                 text = await response.text()
-                logger.debug(f"[authenticate] Ответ {response.status}: {text}")
-                if response.status == 200:
-                    data = await response.json()
-                    if data.get("status") == "Ok":
-                        return {
-                            "contract_id": data.get("contractId"),
-                            "contract_title": data.get("contractTitle")
-                        }
-                return None
-    except aiohttp.ClientTimeout:
+                logger.debug(f"[authenticate] Ответ {response.status}: {text[:1000]}")
+
+                if response.status != 200:
+                    logger.error(f"[authenticate] HTTP {response.status}")
+                    return None
+
+                data = await response.json()
+
+                # если API вернул статус Ok — нормализуем и возвращаем
+                status = data.get("status")
+                contract_id_raw = data.get("contractId") or data.get("contract_id")
+                contract_title_raw = data.get("contractTitle") or data.get("contract_title") or contract_number
+
+                result = {
+                    "status": status,
+                    "contractId": contract_id_raw,
+                    "contractTitle": contract_title_raw,
+                    # нормализованные ключи (строка для хранения в БД)
+                    "contract_id": str(contract_id_raw) if contract_id_raw is not None else None,
+                    "contract_title": contract_title_raw
+                }
+                logger.debug(f"[authenticate] Нормализованный результат: {result}")
+                return result
+
+    except asyncio.TimeoutError:
         logger.error("[authenticate] Таймаут")
         return None
     except ClientError as e:
@@ -42,6 +63,7 @@ async def authenticate(contract_number: str, password: str) -> Optional[dict]:
         logger.exception(f"[authenticate] Unexpected error: {e}")
         return None
     finally:
+        # небольшой sleep, как в остальном модуле (если нужен)
         await asyncio.sleep(0.05)
 
 
