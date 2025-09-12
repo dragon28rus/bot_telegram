@@ -1,3 +1,4 @@
+from datetime import datetime
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
@@ -26,16 +27,15 @@ async def cmd_news(message: Message):
             await message.answer("⚠️ Не удалось получить новости. Попробуйте позже.")
             return
 
-        news_list = news_data["newsList"]
-
-        # сортируем все новости по дате (от старых к новым)
-        news_list.sort(key=lambda n: n.get("date", ""))
+        # сортируем по дате с учётом года
+        news_list = sorted(
+            news_data["newsList"],
+            key=lambda x: datetime.strptime(x["date"], "%d.%m.%Y"),
+            reverse=True
+        )
 
         # берём последние 3
         latest_news = news_list[:3]
-
-        # сортируем их в обратном порядке (новейшие первыми)
-        latest_news.sort(key=lambda n: n.get("date", ""), reverse=True)
 
         logger.debug(f"[cmd_news] Получено {len(news_list)} новостей, показываем последние {len(latest_news)}")
 
