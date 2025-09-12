@@ -1,5 +1,6 @@
 import aiosqlite
-from config import DB_PATH  # вместо from db import DB_PATH
+from config import DB_PATH
+from typing import Optional
 
 async def init_support_table():
     async with aiosqlite.connect(DB_PATH) as db:
@@ -37,7 +38,7 @@ async def link_admin_message(support_message_id: int, admin_message_id: int):
         await db.commit()
 
 
-async def get_chat_id_by_support_message_id(support_message_id: int) -> int | None:
+async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[int]:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute("""
             SELECT user_chat_id FROM support WHERE support_message_id = ?
