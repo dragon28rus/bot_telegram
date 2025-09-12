@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from db.users import get_user_by_chat_id
 from services.bgbilling import get_news
 from logger import logger
-from utils.html_cleaner import clean_html  # функция очистки HTML
+from services.utils import clean_html  # функция очистки HTML
 
 router = Router()
 
