@@ -4,8 +4,9 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from config import SUPPORT_CHAT_ID, ADMIN_CHAT_IDS
+from config import SUPPORT_CHAT_ID
 from db.support import save_support_request, get_chat_id_by_support_message_id
+from db.users import get_user_by_chat_id
 from logger import logger
 
 router = Router()
@@ -38,8 +39,14 @@ async def process_support_message(message: Message, state: FSMContext):
     chat_id = message.chat.id
     support_message = message.text
 
-    # Сохраняем сообщение в БД
+    # Сохраняем запрос в БД
     support_message_id = await save_support_request(chat_id, support_message)
+
+    # Получаем договор, если есть
+    user = await get_user_by_chat_id(str(chat_id))
+    contract_info = ""
+    if user and user[2]:  # user = (chat_id, contract_id, contract_title)
+        contract_info = f"\n📄 Договор: {user[2]} (ID {user[1]})"
 
     logger.info(f"Сохранен запрос в техподдержку от {chat_id}, ID {support_message_id}")
 
@@ -50,11 +57,12 @@ async def process_support_message(message: Message, state: FSMContext):
     sent = await message.bot.send_message(
         SUPPORT_CHAT_ID,
         f"📩 Новый запрос в поддержку (ID {support_message_id}) от {chat_id}:\n\n{support_message}\n\n"
-        f"➡️ Ответьте на это сообщение, чтобы клиент получил ваш ответ."
+        f"➡️ Ответьте на это сообщение (Reply), чтобы клиент получил ваш ответ."
     )
 
-    # Привязываем message_id админа к support_message_id
-    sent.conf["support_message_id"] = support_message_id
+    # Вместо sent.conf — сохраняем в БД связь admin_message_id → support_message_id
+    from db.support import link_admin_message
+    await link_admin_message(support_message_id, sent.message_id)
 
     await state.clear()
 

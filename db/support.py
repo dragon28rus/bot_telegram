@@ -66,3 +66,12 @@ async def get_last_support_message_id(user_chat_id: str) -> Optional[int]:
         ) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
+
+async def link_admin_message(support_message_id: int, admin_message_id: int) -> None:
+    """Привязка сообщения админа к тикету"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE support SET admin_message_id = ? WHERE id = ?",
+            (admin_message_id, support_message_id)
+        )
+        await db.commit()
