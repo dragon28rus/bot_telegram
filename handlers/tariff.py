@@ -1,3 +1,13 @@
+from aiogram import Router, F
+from aiogram.types import Message
+
+from db.users import get_user_by_chat_id
+from services.bgbilling import get_tariff_plan
+from keyboards.main_menu import get_main_menu
+from logger import logger
+
+router = Router()
+
 @router.message(F.text == "📊 Текущий тариф")
 async def get_user_tariff(message: Message):
     chat_id = message.chat.id
@@ -8,15 +18,17 @@ async def get_user_tariff(message: Message):
         return
 
     try:
-        plan = await get_tariff_plan(user["contract_id"])
-        if plan:
-            text = f"📊 Ваш тарифный план: <b>{plan['title']}</b>\n"
-            text += f"📅 С {plan['dateFrom']}"
-            if plan["dateTo"]:
-                text += f" по {plan['dateTo']}"
-            await message.answer(text)
+        data = await get_tariff_plan(user["contract_id"])
+        if data and data.get("status") == "Ok":
+            plans = data.get("contractTarifPlans", [])
+            if plans:
+                title = plans[0].get("title", "—")
+                date_from = plans[0].get("dateFrom", "")
+                await message.answer(f"📊 Ваш тариф: <b>{title}</b>\nАктивен с {date_from}")
+            else:
+                await message.answer("⚠️ У вас нет активных тарифных планов.")
         else:
-            await message.answer("⚠️ Не удалось получить тарифный план.")
+            await message.answer("⚠️ Не удалось получить тариф.")
     except Exception as e:
         logger.error(f"Ошибка получения тарифа chat_id={chat_id}: {e}")
         await message.answer("⚠️ Ошибка при получении тарифа.")
