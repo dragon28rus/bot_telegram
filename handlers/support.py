@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from config import SUPPORT_CHAT_ID
-from db import save_support_request, get_chat_id_by_support_message_id
+from db.support import save_support_request, get_chat_id_by_support_message_id
 from logger import logger, set_chat_id
 
 router = Router()
