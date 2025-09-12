@@ -10,6 +10,7 @@ from handlers import admin, start, auth, unlink, balance, news, tariff, payments
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
 from db.support import init_support_table
+from keyboards import main_menu
 
 
 
@@ -38,6 +39,7 @@ async def main():
     dp.include_router(payments.router)
     dp.include_router(unlink.router)
     dp.include_router(support.router)
+    dp.include_router(main_menu.router)
 
     # --- aiohttp сервер для биллинга ---
     app = web.Application()

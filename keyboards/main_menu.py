@@ -1,14 +1,16 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from db.users import get_user_by_chat_id
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message
+from aiogram import Router
 from config import SUPPORT_PHONE, BILLING_PHONE
+from db.users import get_user_by_chat_id
+
+router = Router()
 
 
-async def get_main_menu(chat_id: int):
+async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
     """
-    Формирует главное меню в зависимости от того,
+    Формирует главное меню (ReplyKeyboard) в зависимости от того,
     авторизован ли пользователь.
     """
-
     user = await get_user_by_chat_id(chat_id)
 
     if user and user.get("contract_id"):
@@ -18,8 +20,10 @@ async def get_main_menu(chat_id: int):
             [KeyboardButton(text="📊 Текущий тариф")],
             [KeyboardButton(text="💳 Последние платежи")],
             [KeyboardButton(text="💵 Оплатить услуги")],
-            [KeyboardButton(text="📰 Новости")],   # Новости только для авторизованных
+            [KeyboardButton(text="📰 Новости")],
             [KeyboardButton(text="✉️ Техподдержка")],
+            [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
+            [KeyboardButton(text="📞 Позвонить в техподдержку")],
             [KeyboardButton(text="🔓 Отвязать договор")],
         ]
     else:
@@ -27,20 +31,26 @@ async def get_main_menu(chat_id: int):
         keyboard = [
             [KeyboardButton(text="🔑 Авторизоваться")],
             [KeyboardButton(text="✉️ Техподдержка")],
+            [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
+            [KeyboardButton(text="📞 Позвонить в техподдержку")],
         ]
 
-    reply_kb = ReplyKeyboardMarkup(
+    return ReplyKeyboardMarkup(
         keyboard=keyboard,
         resize_keyboard=True,
         one_time_keyboard=False
     )
 
-    # Inline-кнопки для звонков (доступны всем)
-    call_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="📞 Позвонить в абонентский отдел", url=f"tel:{BILLING_PHONE}")],
-            [InlineKeyboardButton(text="📞 Позвонить в техподдержку", url=f"tel:{SUPPORT_PHONE}")],
-        ]
-    )
 
-    return reply_kb, call_kb
+# ==============================
+# 📞 Обработчики звонков
+# ==============================
+
+@router.message(lambda msg: msg.text == "📞 Позвонить в абонентский отдел")
+async def call_billing(message: Message):
+    await message.answer(f"📞 Номер абонентского отдела: {BILLING_PHONE}")
+
+
+@router.message(lambda msg: msg.text == "📞 Позвонить в техподдержку")
+async def call_support(message: Message):
+    await message.answer(f"📞 Номер технической поддержки: {SUPPORT_PHONE}")

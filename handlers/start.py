@@ -16,6 +16,8 @@ async def cmd_start(message: Message):
 
     user = await get_user_by_chat_id(chat_id)
 
+    
+
     if user and user.get("contract_id"):
         text = (
             f"👋 Добро пожаловать снова!\n"
@@ -29,10 +31,7 @@ async def cmd_start(message: Message):
             "Выберите действие:"
         )
 
-    reply_kb, call_kb = await get_main_menu(chat_id)
-
+    keyboard = await get_main_menu(message.chat.id)
+    
     # Сообщение с основным меню
-    await message.answer(text, reply_markup=reply_kb)
-
-    # Отдельное сообщение с inline-кнопками "Позвонить"
-    await message.answer("☎️ Быстрая связь:", reply_markup=call_kb)
+    await message.answer("👋 Добро пожаловать! Выберите действие:", reply_markup=keyboard)
