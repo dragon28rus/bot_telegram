@@ -32,6 +32,6 @@ async def cmd_start(message: Message):
         )
 
     keyboard = await get_main_menu(message.chat.id)
-    
+
     # Сообщение с основным меню
     await message.answer("👋 Добро пожаловать! Выберите действие:", reply_markup=keyboard)
