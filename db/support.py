@@ -4,6 +4,7 @@ import os
 from config import DB_PATH
 from typing import Optional
 
+
 async def init_support_table() -> None:
     """Создание таблицы для хранения обращений в техподдержку."""
     db_dir = os.path.dirname(DB_PATH)
@@ -42,6 +43,26 @@ async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional
         async with db.execute(
             "SELECT user_chat_id FROM support_requests WHERE support_message_id = ?",
             (support_message_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
+
+async def get_last_support_message_id(user_chat_id: str) -> Optional[int]:
+    """
+    Возвращает последний message_id в чате поддержки для данного пользователя.
+    Нужно для отправки ответа оператором.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            """
+            SELECT support_message_id
+            FROM support_requests
+            WHERE user_chat_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (user_chat_id,),
         ) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
