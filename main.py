@@ -32,6 +32,7 @@ async def main():
 
     # --- подключаем роутеры ---
     dp.include_router(start.router)
+    dp.include_router(admin.router)
     dp.include_router(auth.router)
     dp.include_router(balance.router)
     dp.include_router(news.router)
