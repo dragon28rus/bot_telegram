@@ -2,7 +2,8 @@
 from aiogram import Router, types, F
 import html2text
 
-from services.bgbilling import authenticate
+from services.bgbilling import get_news
+from db.users import get_user_by_chat_id
 from logger import logger
 from handlers.start import main_menu
 
@@ -11,27 +12,28 @@ router = Router()
 
 @router.message(F.text == "📰 Новости")
 async def show_news(message: types.Message):
-    """
-    Обработчик кнопки "Новости".
-    Загружает последние 3 новости и выводит пользователю.
-    """
     chat_id = message.chat.id
 
-    try:
-        # Получаем список новостей
-        news_list = await get_news_list()
+    user = await get_user_by_chat_id(chat_id)
+    if not user:
+        await message.answer(
+            "❌ Новости доступны только для авторизованных пользователей.\n"
+            "Пожалуйста, авторизуйтесь.",
+            reply_markup=await main_menu(chat_id)
+        )
+        return
 
-        if not news_list:
-            await message.answer(
-                "ℹ️ Новости отсутствуют.",
-                reply_markup=await main_menu(chat_id)
-            )
+    contract_id = user["contract_id"]
+
+    try:
+        news_data = await get_news(contract_id)
+
+        if not news_data or not isinstance(news_data, list):
+            await message.answer("ℹ️ Новости отсутствуют.", reply_markup=await main_menu(chat_id))
             return
 
-        # Берём максимум 3 последних
-        latest_news = news_list[:3]
+        latest_news = news_data[:3]
 
-        # HTML → текст
         h2t = html2text.HTML2Text()
         h2t.ignore_links = True
         h2t.ignore_images = True
@@ -43,15 +45,9 @@ async def show_news(message: types.Message):
             clean_text = h2t.handle(text).strip()
             response.append(f"📰 <b>{title}</b>\n{clean_text}")
 
-        await message.answer(
-            "\n\n".join(response),
-            reply_markup=await main_menu(chat_id)
-        )
-        logger.info(f"Новости отправлены пользователю chat_id={chat_id}")
+        await message.answer("\n\n".join(response), reply_markup=await main_menu(chat_id))
+        logger.info(f"Новости отправлены chat_id={chat_id}, contract_id={contract_id}")
 
     except Exception as e:
-        await message.answer(
-            "⚠ Ошибка при загрузке новостей. Попробуйте позже.",
-            reply_markup=await main_menu(chat_id)
-        )
-        logger.error(f"Ошибка при получении новостей chat_id={chat_id}: {e}")
+        await message.answer("⚠ Ошибка при загрузке новостей. Попробуйте позже.", reply_markup=await main_menu(chat_id))
+        logger.error(f"Ошибка при получении новостей chat_id={chat_id}, contract_id={contract_id}: {e}")

@@ -10,9 +10,6 @@ router = Router()
 
 @router.message(F.text == "🔓 Отвязать договор")
 async def unlink_contract(message: types.Message):
-    """
-    Отвязка договора от пользователя (удаление из БД)
-    """
     chat_id = message.chat.id
     user = await get_user_by_chat_id(chat_id)
 
