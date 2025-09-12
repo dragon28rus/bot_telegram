@@ -1,5 +1,6 @@
 from aiogram import Router
 from aiogram.types import Message
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
@@ -16,7 +17,7 @@ class AuthStates(StatesGroup):
     waiting_for_password = State()
 
 
-@router.message(commands=["auth"])
+@router.message(Command("auth"))
 async def start_auth(message: Message, state: FSMContext):
     """
     Хэндлер для начала авторизации.
