@@ -1,4 +1,4 @@
-from aiogram import Router, types
+from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
@@ -11,16 +11,9 @@ router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    """
-    Обработчик команды /start.
-    Отправляет пользователю приветствие и динамическое главное меню.
-    """
     chat_id = message.chat.id
-
-    # Логируем запуск
     logger.info(f"Пользователь {chat_id} вызвал /start")
 
-    # Проверяем есть ли запись о пользователе в БД
     user = await get_user_by_chat_id(chat_id)
 
     if user and user.get("contract_id"):
@@ -32,11 +25,14 @@ async def cmd_start(message: Message):
     else:
         text = (
             "👋 Добро пожаловать!\n"
-            "Для доступа к балансу и тарифам необходимо авторизоваться.\n\n"
+            "Для доступа к балансу, тарифам и новостям необходимо авторизоваться.\n\n"
             "Выберите действие:"
         )
 
-    # Динамически формируем меню
-    keyboard = await get_main_menu(chat_id)
+    reply_kb, call_kb = await get_main_menu(chat_id)
 
-    await message.answer(text, reply_markup=keyboard)
+    # Сообщение с основным меню
+    await message.answer(text, reply_markup=reply_kb)
+
+    # Отдельное сообщение с inline-кнопками "Позвонить"
+    await message.answer("☎️ Быстрая связь:", reply_markup=call_kb)
