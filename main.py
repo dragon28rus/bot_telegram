@@ -28,12 +28,14 @@ async def main():
     dp = Dispatcher()
 
     # --- подключаем роутеры ---
-    dp.include_router(admin.router)
     dp.include_router(start.router)
     dp.include_router(auth.router)
-    dp.include_router(unlink.router)
     dp.include_router(balance.router)
     dp.include_router(news.router)
+    dp.include_router(tariff.router)
+    dp.include_router(payments.router)
+    dp.include_router(unlink.router)
+    dp.include_router(support.router)
 
     # --- aiohttp сервер для биллинга ---
     app = web.Application()
