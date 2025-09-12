@@ -6,7 +6,7 @@ from aiohttp import web
 
 from config import BOT_TOKEN, BILLING_WEBHOOK_PORT
 from logger import logger
-from handlers import admin, start, auth, unlink, balance, news
+from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
 
