@@ -1,6 +1,5 @@
 # handlers/unlink.py
-from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram import Router, types, F
 
 from db.users import get_user_by_chat_id, delete_user
 from logger import logger
@@ -9,7 +8,7 @@ from handlers.start import main_menu
 router = Router()
 
 
-@router.message(Text("🔓 Отвязать договор"))
+@router.message(F.text == "🔓 Отвязать договор")
 async def unlink_contract(message: types.Message):
     """
     Отвязка договора от пользователя (удаление из БД)

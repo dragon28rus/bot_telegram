@@ -1,6 +1,5 @@
 # handlers/balance.py
-from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram import Router, types, F
 
 from db.users import get_user_by_chat_id
 from bgbilling import get_contract_balance
@@ -10,7 +9,7 @@ from handlers.start import main_menu
 router = Router()
 
 
-@router.message(Text("💰 Узнать баланс"))
+@router.message(F.text == "💰 Узнать баланс")
 async def check_balance(message: types.Message):
     """
     Обработчик кнопки "Узнать баланс".

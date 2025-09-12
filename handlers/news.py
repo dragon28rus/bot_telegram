@@ -1,6 +1,5 @@
 # handlers/news.py
-from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram import Router, types, F
 import html2text
 
 from bgbilling import get_news_list
@@ -10,7 +9,7 @@ from handlers.start import main_menu
 router = Router()
 
 
-@router.message(Text("📰 Новости"))
+@router.message(F.text == "📰 Новости")
 async def show_news(message: types.Message):
     """
     Обработчик кнопки "Новости".
