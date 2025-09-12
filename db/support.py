@@ -41,7 +41,7 @@ async def link_admin_message(support_message_id: int, admin_message_id: int):
 async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[int]:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute("""
-            SELECT user_chat_id FROM support WHERE support_message_id = ?
+            SELECT user_chat_id FROM support WHERE admin_message_id = ?
         """, (support_message_id,))
         row = await cursor.fetchone()
         return row[0] if row else None
