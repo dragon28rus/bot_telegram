@@ -9,12 +9,14 @@ from logger import logger
 from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
+from db.support import init_support_table
 
 
 
 async def main():
     # --- инициализация базы данных ---
     await init_users_table()
+    await init_support_table()
 
     # --- настройка Telegram бота ---
     bot = Bot(
