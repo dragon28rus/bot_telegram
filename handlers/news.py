@@ -9,7 +9,6 @@ from services.utils import clean_html  # функция очистки HTML
 
 router = Router()
 
-
 @router.message(Command("news"))
 @router.message(F.text == "📰 Новости")
 async def cmd_news(message: Message):
@@ -17,7 +16,7 @@ async def cmd_news(message: Message):
     logger.info(f"Пользователь {chat_id} запросил новости")
 
     user = await get_user_by_chat_id(chat_id)
-    if not user or not user[1]:  # проверка, есть ли договор
+    if not user or not user.get("contract_id"):  # проверка, есть ли договор
         await message.answer("❌ Новости доступны только авторизованным пользователям.")
         return
 
