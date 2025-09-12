@@ -29,7 +29,7 @@ async def init_users_table() -> None:
 
 
 
-async def add_user(chat_id: str, contract_id: str, contract_title: str | None = None) -> None:
+async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str] = None) -> None:
     """
     Добавляет или обновляет пользователя в таблице.
     Совместимо со старыми версиями SQLite без ON CONFLICT.
