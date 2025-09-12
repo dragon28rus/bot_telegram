@@ -26,6 +26,10 @@ async def start_auth(message: Message, state: FSMContext):
     await message.answer("Введите номер договора (3–6 цифр):")
     await state.set_state(AuthStates.waiting_for_contract_id)
 
+@router.message(lambda msg: msg.text == "🔑 Авторизоваться")
+async def start_auth_button(message: Message, state: FSMContext):
+    """Обработка кнопки 'Авторизоваться' из меню."""
+    await start_auth(message, state)
 
 @router.message(AuthStates.waiting_for_contract_id)
 async def process_contract_id(message: Message, state: FSMContext):
