@@ -48,9 +48,20 @@ async def save_chat_id(contract_id: str, chat_id: str) -> bool:
     return True
 
 
-async def get_balance(contract_id: str) -> Union[dict, None]:
+async def get_balance(contract_id: str) -> Optional[dict]:
     """
-    Получает баланс договора из BGBilling.
+    Получает баланс договора.
+
+    Args:
+        contract_id: Номер договора
+
+    Returns:
+        dict с ключами:
+        {
+            "balance": str,
+            "currency": str
+        }
+        или None, если не удалось получить данные.
     """
     try:
         async with aiohttp.ClientSession(
@@ -62,25 +73,40 @@ async def get_balance(contract_id: str) -> Union[dict, None]:
                 params={"contractId": contract_id}
             ) as response:
                 if response.status == 200:
-                    return await response.json()
-                logger.error(f"Failed to get balance: {response.status}")
+                    data = await response.json()
+                    if data.get("status") == "Ok":
+                        return {
+                            "balance": data.get("sum"),
+                            "currency": data.get("currencyTitleMedium")
+                        }
+                    return None
+                logger.error(f"Ошибка получения баланса: {response.status}")
                 return None
     except aiohttp.ClientTimeout:
-        logger.error("Timeout connecting to BGBilling API for balance")
-        return None
-    except ClientError as e:
-        logger.error(f"Error getting balance from BGBilling: {e}")
+        logger.error("Таймаут при получении баланса")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error getting balance: {e}")
+        logger.error(f"Ошибка получения баланса: {e}")
         return None
     finally:
         await asyncio.sleep(0.05)
 
 
-async def get_tariff_plan(contract_id: str) -> Union[dict, None]:
+async def get_tariff_plan(contract_id: str) -> Optional[dict]:
     """
-    Получает тарифные планы по договору.
+    Получает текущий тарифный план договора.
+
+    Args:
+        contract_id: Номер договора
+
+    Returns:
+        dict с ключами:
+        {
+            "title": str,
+            "dateFrom": str,
+            "dateTo": str | None
+        }
+        или None, если не удалось получить данные.
     """
     try:
         async with aiohttp.ClientSession(
@@ -92,17 +118,24 @@ async def get_tariff_plan(contract_id: str) -> Union[dict, None]:
                 params={"contractId": contract_id}
             ) as response:
                 if response.status == 200:
-                    return await response.json()
-                logger.error(f"Failed to get tariff: {response.status}")
+                    data = await response.json()
+                    if data.get("status") == "Ok":
+                        plans = data.get("contractTarifPlans", [])
+                        if plans:
+                            plan = plans[0]
+                            return {
+                                "title": plan.get("title"),
+                                "dateFrom": plan.get("dateFrom"),
+                                "dateTo": plan.get("dateTo") or None,
+                            }
+                        return None
+                logger.error(f"Ошибка получения тарифа: {response.status}")
                 return None
     except aiohttp.ClientTimeout:
-        logger.error("Timeout connecting to BGBilling API for tariff")
-        return None
-    except ClientError as e:
-        logger.error(f"Error getting tariff from BGBilling: {e}")
+        logger.error("Таймаут при получении тарифа")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error getting tariff: {e}")
+        logger.error(f"Ошибка получения тарифа: {e}")
         return None
     finally:
         await asyncio.sleep(0.05)
@@ -147,9 +180,25 @@ async def get_news(contract_id: str) -> Union[dict, None]:
         await asyncio.sleep(0.05)
 
 
-async def get_last_payments(contract_id: str) -> Union[dict, None]:
+async def get_payments(contract_id: str, limit: int = 3) -> Optional[list[dict]]:
     """
-    Получение последних платежей по договору.
+    Получает последние платежи по договору.
+
+    Args:
+        contract_id: Номер договора
+        limit: количество последних платежей (по умолчанию 3)
+
+    Returns:
+        list словарей вида:
+        [
+            {
+                "date": "02.09.2025",
+                "sum": "600,00",
+                "type": "Сбербанк эква́йринг"
+            },
+            ...
+        ]
+        или None, если не удалось получить данные.
     """
     try:
         async with aiohttp.ClientSession(
@@ -158,20 +207,27 @@ async def get_last_payments(contract_id: str) -> Union[dict, None]:
         ) as session:
             async with session.get(
                 f"{BGBILLING_API_URL}/jsonWebApi/lastContractPayments",
-                params={"contractId": contract_id, "members": 1, "lastPayments": 3}
+                params={"contractId": contract_id, "members": 1, "lastPayments": limit}
             ) as response:
                 if response.status == 200:
-                    return await response.json()
-                logger.error(f"Failed to get payments: {response.status}")
+                    data = await response.json()
+                    if data.get("status") == "Ok":
+                        return [
+                            {
+                                "date": p.get("date"),
+                                "sum": p.get("sum"),
+                                "type": p.get("typeTitle"),
+                            }
+                            for p in data.get("contractPayments", [])
+                        ]
+                    return None
+                logger.error(f"Ошибка получения платежей: {response.status}")
                 return None
     except aiohttp.ClientTimeout:
-        logger.error("Timeout connecting to BGBilling API for payments")
-        return None
-    except ClientError as e:
-        logger.error(f"Error getting payments from BGBilling: {e}")
+        logger.error("Таймаут при получении платежей")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error getting payments: {e}")
+        logger.error(f"Ошибка получения платежей: {e}")
         return None
     finally:
         await asyncio.sleep(0.05)

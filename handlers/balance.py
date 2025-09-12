@@ -1,15 +1,13 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.types import Message
-
-from services.bgbilling import get_balance
 from db.users import get_user_by_chat_id
+from services.bgbilling import get_balance
 from keyboards.main_menu import get_main_menu
 from logger import logger
 
 router = Router()
 
-
-@router.message(lambda msg: msg.text == "💰 Узнать баланс")
+@router.message(F.text == "💰 Узнать баланс")
 async def get_user_balance(message: Message):
     chat_id = message.chat.id
     user = await get_user_by_chat_id(chat_id)
@@ -19,10 +17,11 @@ async def get_user_balance(message: Message):
         return
 
     try:
-        data = await get_balance(user["contract_id"])
-        if data:
-            balance = data.get("balance", "неизвестно")
-            await message.answer(f"💰 Ваш баланс: <b>{balance} ₽</b>")
+        balance = await get_balance(user["contract_id"])
+        if balance:
+            await message.answer(
+                f"💰 Ваш баланс: {balance['balance']} {balance['currency']}"
+            )
         else:
             await message.answer("⚠️ Не удалось получить баланс.")
     except Exception as e:
