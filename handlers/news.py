@@ -31,7 +31,7 @@ async def cmd_news(message: Message):
         news_list = sorted(
             news_data["newsList"],
             key=lambda x: datetime.strptime(x["date"], "%d.%m.%Y"),
-            reverse=True
+            reverse=False
         )
 
         # берём последние 3
