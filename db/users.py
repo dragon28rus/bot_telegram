@@ -28,18 +28,30 @@ async def init_users_table() -> None:
         await db.commit()
 
 
-async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str] = None) -> None:
+
+async def add_user(chat_id: str, contract_id: str, contract_title: str | None = None) -> None:
     """
-    Добавляет пользователя в таблицу или обновляет данные при конфликте по chat_id.
+    Добавляет или обновляет пользователя в таблице.
+    Совместимо со старыми версиями SQLite без ON CONFLICT.
     """
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            INSERT INTO users (chat_id, contract_id, contract_title)
-            VALUES (?, ?, ?)
-            ON CONFLICT(chat_id) DO UPDATE SET
-                contract_id=excluded.contract_id,
-                contract_title=excluded.contract_title
-        """, (chat_id, contract_id, contract_title))
+        # Сначала проверим, есть ли такой пользователь
+        cursor = await db.execute("SELECT id FROM users WHERE chat_id = ?", (chat_id,))
+        row = await cursor.fetchone()
+
+        if row:
+            # Обновляем существующую запись
+            await db.execute(
+                "UPDATE users SET contract_id = ?, contract_title = ? WHERE chat_id = ?",
+                (contract_id, contract_title, chat_id)
+            )
+        else:
+            # Вставляем новую запись
+            await db.execute(
+                "INSERT INTO users (chat_id, contract_id, contract_title) VALUES (?, ?, ?)",
+                (chat_id, contract_id, contract_title)
+            )
+
         await db.commit()
 
 
