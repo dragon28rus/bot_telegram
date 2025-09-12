@@ -22,28 +22,30 @@ async def save_support_request(
     chat_id: int,
     contract_title: Optional[str],
     support_message_id: int,
-    admin_message_id: int,
     message_text: Optional[str]
 ):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """
-            INSERT INTO support (user_chat_id, contract_title, support_message_id, admin_message_id, support_message)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO support (user_chat_id, contract_title, support_message_id, support_message)
+            VALUES (?, ?, ?, ?)
             """,
-            (chat_id, contract_title, support_message_id, admin_message_id, message_text)
+            (chat_id, contract_title, support_message_id, message_text)
         )
         await db.commit()
 
-
-
 async def link_admin_message(support_message_id: int, admin_message_id: int):
+    """Привязываем ответ админа к сообщению пользователя."""
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            UPDATE support SET admin_message_id = ? WHERE support_message_id = ?
-        """, (admin_message_id, support_message_id))
+        await db.execute(
+            """
+            UPDATE support
+            SET admin_message_id = ?
+            WHERE support_message_id = ?
+            """,
+            (admin_message_id, support_message_id)
+        )
         await db.commit()
-
 
 async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[int]:
     async with aiosqlite.connect(DB_PATH) as db:
