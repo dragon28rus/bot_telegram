@@ -100,7 +100,7 @@ async def process_admin_reply(message: Message):
 
     try:
         text = f"✉️ Ответ от поддержки:\n{message.text or '[медиа]'}"
-        await bot.send_message(chat_id=user_chat_id, text=text)
+        await message.bot.send_message(chat_id=user_chat_id, text=text)
         logging.info(f"[support] Ответ доставлен пользователю chat_id={user_chat_id}")
 
         await link_admin_message(reply_to_id, message.message_id)
