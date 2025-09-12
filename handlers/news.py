@@ -2,7 +2,7 @@
 from aiogram import Router, types, F
 import html2text
 
-from bgbilling import get_news_list
+from services.bgbilling import authenticate
 from logger import logger
 from handlers.start import main_menu
 

@@ -4,7 +4,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
 from db.users import add_user
-from bgbilling import authenticate
+from services.bgbilling import authenticate
 from logger import logger
 from handlers.start import main_menu
 

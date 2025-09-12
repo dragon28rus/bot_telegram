@@ -2,7 +2,7 @@
 from aiogram import Router, types, F
 
 from db.users import get_user_by_chat_id
-from bgbilling import get_contract_balance
+from services.bgbilling import authenticate
 from logger import logger
 from handlers.start import main_menu
 
