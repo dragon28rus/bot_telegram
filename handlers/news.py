@@ -35,7 +35,7 @@ async def cmd_news(message: Message):
         )
 
         # берём последние 3
-        latest_news = news_list[:3]
+        latest_news = news_list[-3:]
 
         logger.debug(f"[cmd_news] Получено {len(news_list)} новостей, показываем последние {len(latest_news)}")
 
