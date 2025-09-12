@@ -32,10 +32,10 @@ async def cmd_news(message: Message):
         news_list.sort(key=lambda n: n.get("date", ""))
 
         # берём последние 3
-        latest_news = news_list[-3:]
+        latest_news = news_list[:3]
 
         # сортируем их в обратном порядке (новейшие первыми)
-        latest_news.sort(key=lambda n: n.get("date", ""), reverse=False)
+        latest_news.sort(key=lambda n: n.get("date", ""), reverse=True)
 
         logger.debug(f"[cmd_news] Получено {len(news_list)} новостей, показываем последние {len(latest_news)}")
 
