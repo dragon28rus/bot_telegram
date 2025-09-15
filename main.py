@@ -58,7 +58,7 @@ async def main():
     # Запускаем бота и вебсервер параллельно
     await asyncio.gather(
         dp.start_polling(bot),
-        web._run_app(app, host="0.0.0.0", port=BILLING_WEBHOOK_PORT)
+        web._run_app(app, host="127.0.0.1", port=BILLING_WEBHOOK_PORT)
     )
 
     @middleware
