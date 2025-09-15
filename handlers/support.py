@@ -4,7 +4,7 @@ from aiogram.types import Message
 from config import SUPPORT_CHAT_ID
 from db.support import start_session, end_session, is_in_support, save_message_mapping
 from db.users import get_user_by_chat_id
-from main_menu import get_support_menu, get_main_menu
+from keyboards.main_menu import get_support_menu, get_main_menu
 
 router = Router()
 
