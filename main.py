@@ -37,10 +37,10 @@ async def main():
     dp.include_router(news.router)
     dp.include_router(tariff.router)
     dp.include_router(payments.router)
+    dp.include_router(payments_stub.router)    
     dp.include_router(unlink.router)
     dp.include_router(main_menu.router)
     dp.include_router(calls.router)
-    dp.include_router(payments_stub.router)
     dp.include_router(support.router)
 
     # --- aiohttp сервер для биллинга ---
