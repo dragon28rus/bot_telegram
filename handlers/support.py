@@ -57,13 +57,8 @@ async def exit_support(message: Message):
         reply_markup=await get_main_menu(message.chat.id)
     )
 
-@router.message(F.text, F.message)
-async def debug_all_messages(message: F.message):
-    from pprint import pformat
-    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
-
 # Пересылка сообщений от абонентов (все чаты, кроме SUPPORT_CHAT_ID)
-@router.message(F.text, F.message.chat.id != str(SUPPORT_CHAT_ID))
+@router.message(F.text, Message.chat.id != str(SUPPORT_CHAT_ID))
 async def forward_to_support(message: Message):
     """
     Пересылка текстовых сообщений от абонента в чат техподдержки.
