@@ -36,6 +36,9 @@ async def process_amount(message: Message, state: FSMContext):
     except ValueError:
         await message.answer("❌ Введите корректную сумму (например: 200 или 1500.50)")
         return
+    
+    # Переводим в копейки
+    amount = int(amount * 100)
 
     # Получаем договор пользователя
     user = await get_user_by_chat_id(message.chat.id)
@@ -46,7 +49,7 @@ async def process_amount(message: Message, state: FSMContext):
         f"https://payframe.ckassa.ru/"
         f"?service={PAYMENT_SHOP_ID}"
         f"&Л_СЧЕТ={contract_title}"
-        f"&amount={amount}"*100
+        f"&amount={amount}"
         f"&amount_read_only=false"
     )
 
