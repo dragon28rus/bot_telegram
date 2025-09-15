@@ -62,7 +62,8 @@ async def debug_all_messages(message: Message):
     from pprint import pformat
     logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
 
-@router.message(F.text)
+# Пересылка сообщений от абонентов (все чаты, кроме SUPPORT_CHAT_ID)
+@router.message(F.text, F.chat.id != str(SUPPORT_CHAT_ID))
 async def forward_to_support(message: Message):
     """
     Пересылка текстовых сообщений от абонента в чат техподдержки.
