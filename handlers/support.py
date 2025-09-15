@@ -57,11 +57,6 @@ async def exit_support(message: Message):
         reply_markup=await get_main_menu(message.chat.id)
     )
 
-@router.message()
-async def debug_all_messages(message: Message):
-    from pprint import pformat
-    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
-
 # Пересылка сообщений от абонентов (все чаты, кроме SUPPORT_CHAT_ID)
 @router.message(F.text, F.chat.id != str(SUPPORT_CHAT_ID))
 async def forward_to_support(message: Message):
@@ -134,3 +129,10 @@ async def operator_reply(message: Message):
                     f"Текст: {message.text}")
     except Exception as e:
         logger.exception(f"[SUPPORT] Ошибка отправки ответа пользователю {chat_id}: {e}")
+
+"""
+@router.message()
+async def debug_all_messages(message: Message):
+    from pprint import pformat
+    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
+"""
