@@ -38,7 +38,7 @@ async def ask_amount(message: Message, state: FSMContext):
     )
 
 
-@router.message(PaymentState.waiting_for_amount, F.text == "❌ Отмена")
+@router.message(F.text == "❌ Отмена")
 async def cancel_payment(message: Message, state: FSMContext):
     """
     Отмена операции оплаты.
