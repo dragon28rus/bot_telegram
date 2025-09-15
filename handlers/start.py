@@ -16,10 +16,10 @@ async def cmd_start(message: Message):
 
     user = await get_user_by_chat_id(chat_id)
 
-    if user and user.get("contract_id"):
+    if user and user.get("contract_title"):
         text = (
             f"👋 Добро пожаловать снова!\n"
-            f"Ваш договор: <b>{user['contract_id']}</b>\n\n"
+            f"Ваш договор: <b>{user['contract_title']}</b>\n\n"
             f"Выберите действие:"
         )
     else:
