@@ -1,69 +1,76 @@
+# db/support.py
 import aiosqlite
 from config import DB_PATH
-from typing import Optional
+from typing import Optional, Tuple
 
-async def init_support_table():
+async def create_tables() -> None:
+    """Создание таблиц для поддержки (если их еще нет)."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
-        CREATE TABLE IF NOT EXISTS support (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_chat_id TEXT NOT NULL,
-            contract_title TEXT,
-            support_message_id INTEGER NOT NULL,
-            support_message TEXT NOT NULL,
-            message_type TEXT DEFAULT 'text',
-            admin_message_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+            CREATE TABLE IF NOT EXISTS support_sessions (
+                chat_id INTEGER PRIMARY KEY,
+                contract_title TEXT NOT NULL,
+                is_active INTEGER DEFAULT 1
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id INTEGER NOT NULL,
+                user_message_id INTEGER NOT NULL,
+                support_message_id INTEGER NOT NULL
+            )
         """)
         await db.commit()
 
-async def save_support_request(
-    chat_id: int,
-    contract_title: Optional[str],
-    support_message_id: int,
-    message_text: Optional[str]
-):
+
+async def start_session(chat_id: int, contract_title: str) -> None:
+    """Запуск сессии поддержки для пользователя."""
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            """
-            INSERT INTO support (user_chat_id, contract_title, support_message_id, support_message)
-            VALUES (?, ?, ?, ?)
-            """,
-            (chat_id, contract_title, support_message_id, message_text)
-        )
+        await db.execute("""
+            INSERT OR REPLACE INTO support_sessions (chat_id, contract_title, is_active)
+            VALUES (?, ?, 1)
+        """, (chat_id, contract_title))
         await db.commit()
 
-async def link_admin_message(support_message_id: int, admin_message_id: int):
-    """Привязываем ответ админа к сообщению пользователя."""
+
+async def end_session(chat_id: int) -> None:
+    """Завершение сессии поддержки."""
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            """
-            UPDATE support
-            SET admin_message_id = ?
-            WHERE support_message_id = ?
-            """,
-            (admin_message_id, support_message_id)
-        )
+        await db.execute("""
+            UPDATE support_sessions SET is_active = 0 WHERE chat_id = ?
+        """, (chat_id,))
         await db.commit()
 
-async def get_chat_id_by_support_message_id(support_message_id: int) -> Optional[int]:
+
+async def is_in_support(chat_id: int) -> bool:
+    """Проверка, находится ли пользователь в режиме поддержки."""
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("""
-            SELECT user_chat_id FROM support WHERE admin_message_id = ?
-        """, (support_message_id,))
-        row = await cursor.fetchone()
-        return row[0] if row else None
-    
-async def get_support_message_id_by_admin_message_id(admin_message_id: int):
-    """
-    Возвращает support_message_id (исходное сообщение пользователя),
-    связанное с admin_message_id (ответ оператора).
-    """
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute(
-            "SELECT support_message_id FROM support WHERE admin_message_id = ?",
-            (admin_message_id,)
-        ) as cursor:
+        async with db.execute("""
+            SELECT is_active FROM support_sessions WHERE chat_id = ?
+        """, (chat_id,)) as cursor:
             row = await cursor.fetchone()
-            return row[0] if row else None
+            return bool(row and row[0] == 1)
+
+
+async def save_message_mapping(chat_id: int, user_message_id: int, support_message_id: int) -> None:
+    """Сохраняем соответствие между сообщениями пользователя и поддержки."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO support_messages (chat_id, user_message_id, support_message_id)
+            VALUES (?, ?, ?)
+        """, (chat_id, user_message_id, support_message_id))
+        await db.commit()
+
+
+async def get_user_by_support_msg_id(support_message_id: int) -> Optional[Tuple[int, int]]:
+    """
+    Получаем пользователя по сообщению из чата поддержки.
+    Возвращает (chat_id, user_message_id) или None.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT chat_id, user_message_id FROM support_messages
+            WHERE support_message_id = ?
+        """, (support_message_id,)) as cursor:
+            return await cursor.fetchone()

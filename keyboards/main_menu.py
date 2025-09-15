@@ -21,7 +21,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
             [KeyboardButton(text="💳 Последние платежи")],
             [KeyboardButton(text="💵 Оплатить услуги")],
             [KeyboardButton(text="📰 Новости")],
-            [KeyboardButton(text="Техподдержка")],
+            [KeyboardButton(text="✉️ Техподдержка")],
             [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
             [KeyboardButton(text="📞 Позвонить в техподдержку")],
             [KeyboardButton(text="🔓 Отвязать договор")],
@@ -30,11 +30,25 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
         # Неавторизованный пользователь
         keyboard = [
             [KeyboardButton(text="🔑 Авторизоваться")],
-            [KeyboardButton(text="Техподдержка")],
+            [KeyboardButton(text="✉️ Техподдержка")],
             [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
             [KeyboardButton(text="📞 Позвонить в техподдержку")],
         ]
 
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
+
+async def get_support_menu() -> ReplyKeyboardMarkup:
+    """
+    Клавиатура для режима общения с техподдержкой.
+    """
+    keyboard = [
+        [KeyboardButton(text="❌ Выйти из техподдержки")]
+    ]
     return ReplyKeyboardMarkup(
         keyboard=keyboard,
         resize_keyboard=True,
