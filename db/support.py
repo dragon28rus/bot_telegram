@@ -3,7 +3,7 @@ import aiosqlite
 from config import DB_PATH
 from typing import Optional, Tuple
 
-async def create_tables() -> None:
+async def init_support_table() -> None:
     """Создание таблиц для поддержки (если их еще нет)."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
