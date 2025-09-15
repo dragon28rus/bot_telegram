@@ -29,8 +29,8 @@ async def process_amount(message: Message, state: FSMContext):
     Обрабатываем сумму и формируем ссылку на оплату.
     """
     try:
-        amount = float(message.text.replace(",", "."))
-        if amount < 20:
+        amount_rub = float(message.text.replace(",", "."))
+        if amount_rub < 20:
             await message.answer("❌ Минимальная сумма оплаты — 20 рублей. Попробуйте снова:")
             return
     except ValueError:
@@ -38,7 +38,7 @@ async def process_amount(message: Message, state: FSMContext):
         return
     
     # Переводим в копейки
-    amount = int(amount * 100)
+    amount = int(amount_rub * 100)
 
     # Получаем договор пользователя
     user = await get_user_by_chat_id(message.chat.id)
@@ -56,7 +56,7 @@ async def process_amount(message: Message, state: FSMContext):
     # Логируем событие
     logger.info(
         f"[PAYMENTS] Пользователь {message.from_user.full_name} (chat_id={message.chat.id}) "
-        f"с договором '{contract_title}' запросил оплату на сумму {amount:.2f} руб."
+        f"с договором '{contract_title}' запросил оплату на сумму {amount_rub:.2f} руб."
     )
 
     # Кнопка оплаты
@@ -67,7 +67,7 @@ async def process_amount(message: Message, state: FSMContext):
     )
 
     await message.answer(
-        f"✅ Ссылка для оплаты сформирована на сумму {amount:.2f} руб.\n"
+        f"✅ Ссылка для оплаты сформирована на сумму {amount_rub:.2f} руб.\n"
         f"Нажмите кнопку ниже для перехода:",
         reply_markup=keyboard
     )
