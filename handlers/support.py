@@ -16,46 +16,6 @@ from logger import logger
 
 router = Router()
 
-@router.message(F.text == "✉️ Техподдержка")
-async def enter_support(message: Message):
-    """
-    Вход в режим общения с техподдержкой.
-    """
-    user = await get_user_by_chat_id(message.chat.id)
-
-    if not user:
-        logger.warning(f"[SUPPORT] Неавторизованный пользователь {message.chat.id} "
-                       f"пытался войти в поддержку")
-        await message.answer("❌ Вы не авторизованы. Для связи с техподдержкой авторизуйтесь.")
-        return
-
-    contract_title = user.get("contract_title")
-    await start_session(message.chat.id, contract_title)
-
-    logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
-                f"вошёл в поддержку. Договор: {contract_title}")
-
-    await message.answer(
-        "✉️ Вы вошли в режим общения с техподдержкой.\n"
-        "Напишите своё сообщение, оператор ответит вам здесь.",
-        reply_markup=await get_support_menu()
-    )
-
-
-@router.message(F.text == "❌ Выйти из техподдержки")
-async def exit_support(message: Message):
-    """
-    Выход из режима общения с техподдержкой.
-    """
-    await end_session(message.chat.id)
-
-    logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
-                f"вышел из поддержки")
-
-    await message.answer(
-        "🚪 Вы вышли из режима общения с техподдержкой.",
-        reply_markup=await get_main_menu(message.chat.id)
-    )
 
 def format_reply_info(msg: Message) -> str:
     """
@@ -78,17 +38,62 @@ def format_reply_info(msg: Message) -> str:
     return "[медиа]"
 
 
+# ==============================
+# ✉️ Вход в поддержку
+# ==============================
+@router.message(F.text == "✉️ Техподдержка")
+async def enter_support(message: Message):
+    """
+    Вход в режим общения с техподдержкой.
+    """
+    user = await get_user_by_chat_id(message.chat.id)
+    contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
 
+    await start_session(message.chat.id, contract_title)
+
+    logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
+                f"вошёл в поддержку. Договор: {contract_title}")
+
+    await message.answer(
+        "✉️ Вы вошли в режим общения с техподдержкой.\n"
+        "Напишите своё сообщение, оператор ответит вам здесь.",
+        reply_markup=await get_support_menu()
+    )
+
+
+# ==============================
+# ❌ Выход из поддержки
+# ==============================
+@router.message(F.text == "❌ Выйти из техподдержки")
+async def exit_support(message: Message):
+    """
+    Выход из режима общения с техподдержкой.
+    """
+    await end_session(message.chat.id)
+
+    logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
+                f"вышел из поддержки")
+
+    await message.answer(
+        "🚪 Вы вышли из режима общения с техподдержкой.",
+        reply_markup=await get_main_menu(message.chat.id)
+    )
+
+
+# ==============================
+# 🔄 Универсальная пересылка
+# ==============================
 @router.message()
 async def forward_message(message: Message):
     """
-    Универсальный хэндлер: пересылка сообщений абонента оператору
-    и пересылка reply от оператора абоненту.
+    Универсальный хэндлер:
+    - пересылка сообщений абонента оператору,
+    - пересылка reply от оператора абоненту.
     """
 
-    # =============================
-    # Сообщения от оператора (SUPPORT_CHAT_ID)
-    # =============================
+    # -----------------------------
+    # Сообщения от ОПЕРАТОРА
+    # -----------------------------
     if str(message.chat.id) == str(SUPPORT_CHAT_ID):
         if not message.reply_to_message:
             logger.debug(f"[SUPPORT] Оператор написал без reply: {message.text or '[медиа]'}")
@@ -100,31 +105,27 @@ async def forward_message(message: Message):
             return
 
         chat_id, user_message_id = mapping
-        reply_text = f"📩 Ответ от оператора:\n{message.text or '[медиа]'}"
 
         try:
-            # Пересылаем как есть (с медиа, если было)
             sent_msg = await message.copy_to(
                 chat_id=chat_id,
                 reply_to_message_id=user_message_id
             )
-
             logger.info(f"[SUPPORT] Оператор ({message.from_user.id}) "
                         f"ответил пользователю {chat_id}: {message.text or '[медиа]'}")
         except Exception as e:
             logger.exception(f"[SUPPORT] Ошибка отправки ответа пользователю {chat_id}: {e}")
         return
 
-    # =============================
-    # Сообщения от абонентов (все остальные)
-    # =============================
+    # -----------------------------
+    # Сообщения от АБОНЕНТОВ
+    # -----------------------------
     user = await get_user_by_chat_id(message.chat.id)
-    if not user:
-        logger.error(f"[SUPPORT] Не найден пользователь в БД (chat_id={message.chat.id})")
-        await message.answer("❌ Ошибка: вы не авторизованы.")
-        return
+    contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
 
-    contract_title = user.get("contract_title")
+    # Проверяем, что абонент в режиме поддержки
+    if not await is_in_support(message.chat.id):
+        return
 
     # Если абонент отвечает на сообщение
     reply_info = ""
@@ -135,19 +136,19 @@ async def forward_message(message: Message):
     # Формируем заголовок
     header = (
         f"📨 Сообщение от абонента:\n"
-        f"👤 Пользователь: {message.from_user.full_name} (id={message.chat.id})\n"
+        f"👤 Пользователь: {message.from_user.full_name} @{message.from_user.username}\n"
         f"📄 Договор: {contract_title}"
         f"{reply_info}\n\n"
     )
 
     try:
         # Сначала шлём заголовок
-        header_msg = await message.bot.send_message(SUPPORT_CHAT_ID, header)
+        await message.bot.send_message(SUPPORT_CHAT_ID, header)
 
-        # Потом пересылаем оригинал (с медиа, если есть)
+        # Потом пересылаем оригинал (с медиа/текстом)
         sent_msg = await message.copy_to(SUPPORT_CHAT_ID)
 
-        # Сохраняем связь для reply (по медиа/тексту)
+        # Сохраняем связь для reply
         await save_message_mapping(message.chat.id, message.message_id, sent_msg.message_id)
 
         logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
@@ -157,10 +158,3 @@ async def forward_message(message: Message):
     except Exception as e:
         logger.exception(f"[SUPPORT] Ошибка пересылки сообщения оператору: {e}")
         await message.answer("⚠️ Ошибка при отправке сообщения в поддержку.")
-
-"""
-@router.message()
-async def debug_all_messages(message: Message):
-    from pprint import pformat
-    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
-"""
