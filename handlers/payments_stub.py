@@ -14,8 +14,7 @@ router = Router()
 class PaymentState(StatesGroup):
     waiting_for_amount = State()
 
-
-@router.message(F.text == "💳 Оплатить услуги")
+@router.message(F.text == "💵 Оплатить услуги")
 async def ask_amount(message: Message, state: FSMContext):
     """
     Пользователь нажал кнопку оплаты — спрашиваем сумму.
