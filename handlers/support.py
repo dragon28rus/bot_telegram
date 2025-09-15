@@ -12,10 +12,9 @@ from db.support import (
 )
 from db.users import get_user_by_chat_id
 from keyboards.main_menu import get_support_menu, get_main_menu
+from logger import logger
 
 router = Router()
-logger = logging.getLogger(__name__)
-
 
 @router.message(F.text == "✉️ Техподдержка")
 async def enter_support(message: Message):
