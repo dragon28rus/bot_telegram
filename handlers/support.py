@@ -17,6 +17,11 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
+@router.message()
+async def debug_all_messages(message: Message):
+    from pprint import pformat
+    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
+
 @router.message(F.text == "✉️ Техподдержка")
 async def enter_support(message: Message):
     """
@@ -98,12 +103,16 @@ async def forward_to_support(message: Message):
 # ==============================
 # 🔄 Ответы от оператора (reply)
 # ==============================
-@router.message(F.chat.id == int(SUPPORT_CHAT_ID))
+@router.message()
 async def operator_reply(message: Message):
     """
     Обработка сообщений в чате поддержки.
     Если это reply на сообщение абонента → пересылаем абоненту.
     """
+    # Проверяем, что сообщение пришло именно из чата поддержки
+    if str(message.chat.id) != str(SUPPORT_CHAT_ID):
+        return
+
     if not message.reply_to_message:
         logger.debug(f"[SUPPORT] Сообщение в чате поддержки без reply: {message.text}")
         return
