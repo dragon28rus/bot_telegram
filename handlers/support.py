@@ -17,11 +17,6 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-@router.message()
-async def debug_all_messages(message: Message):
-    from pprint import pformat
-    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
-
 @router.message(F.text == "✉️ Техподдержка")
 async def enter_support(message: Message):
     """
@@ -63,6 +58,10 @@ async def exit_support(message: Message):
         reply_markup=await get_main_menu(message.chat.id)
     )
 
+@router.message()
+async def debug_all_messages(message: Message):
+    from pprint import pformat
+    logger.debug(f"[DEBUG] Пришло сообщение:\n{pformat(message.dict())}")
 
 @router.message(F.text)
 async def forward_to_support(message: Message):
