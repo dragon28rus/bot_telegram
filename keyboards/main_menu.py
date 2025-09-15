@@ -41,21 +41,6 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
         one_time_keyboard=False
     )
 
-
-async def get_support_menu() -> ReplyKeyboardMarkup:
-    """
-    Клавиатура для режима общения с техподдержкой.
-    """
-    keyboard = [
-        [KeyboardButton(text="❌ Выйти из техподдержки")]
-    ]
-    return ReplyKeyboardMarkup(
-        keyboard=keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=False
-    )
-
-
 # ==============================
 # 📞 Обработчики звонков
 # ==============================
@@ -68,3 +53,20 @@ async def call_billing(message: Message):
 @router.message(lambda msg: msg.text == "📞 Позвонить в техподдержку")
 async def call_support(message: Message):
     await message.answer(f"📞 Номер технической поддержки: {SUPPORT_PHONE}")
+
+
+# ==============================
+# ✉️ Техническая поддержка 
+# ==============================
+async def get_support_menu() -> ReplyKeyboardMarkup:
+    """
+    Клавиатура для режима общения с техподдержкой.
+    """
+    keyboard = [
+        [KeyboardButton(text="❌ Выйти из техподдержки")]
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
