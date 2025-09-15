@@ -58,8 +58,8 @@ async def exit_support(message: Message):
     )
 
 # Пересылка сообщений от абонентов (все чаты, кроме SUPPORT_CHAT_ID)
-@router.message(F.text)
-async def forward_to_support(message: Message):
+@router.message()
+async def forward_message(message: Message):
     """
     Пересылка текстовых сообщений от абонента в чат техподдержки.
     """
@@ -90,6 +90,33 @@ async def forward_to_support(message: Message):
         except Exception as e:
             logger.exception(f"[SUPPORT] Ошибка пересылки сообщения в поддержку: {e}")
             await message.answer("⚠️ Ошибка при отправке сообщения в поддержку.")
+    
+    if message.from_user.id == SUPPORT_CHAT_ID:
+        if not message.reply_to_message:
+            logger.debug(f"[SUPPORT] Сообщение в чате поддержки без reply: {message.text}")
+            return
+        
+        mapping = await get_user_by_support_msg_id(message.reply_to_message.message_id)
+        if not mapping:
+            logger.warning(f"[SUPPORT] Не найдено соответствие для reply {message.reply_to_message.message_id}")
+            return
+
+        chat_id, user_message_id = mapping
+        reply_text = f"📩 Ответ от оператора:\n{message.text}"
+
+        try:
+            await message.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                reply_to_message_id=user_message_id
+            )
+
+            logger.info(f"[SUPPORT] Оператор ответил пользователю {chat_id}. "
+                        f"Текст: {message.text}")
+        except Exception as e:
+            logger.exception(f"[SUPPORT] Ошибка отправки ответа пользователю {chat_id}: {e}")
+
+
 
 # ==============================
 # 🔄 Ответы от оператора (reply)
