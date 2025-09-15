@@ -58,40 +58,38 @@ async def exit_support(message: Message):
     )
 
 # Пересылка сообщений от абонентов (все чаты, кроме SUPPORT_CHAT_ID)
-@router.message(F.text, Message.chat.id != str(SUPPORT_CHAT_ID))
+@router.message(F.text, F.message.chat.id != str(SUPPORT_CHAT_ID))
 async def forward_to_support(message: Message):
     """
     Пересылка текстовых сообщений от абонента в чат техподдержки.
     """
-    if not await is_in_support(message.chat.id):
-        return
+    if message.from_user.id != SUPPORT_CHAT_ID:
+        user = await get_user_by_chat_id(message.chat.id)
+        if not user:
+            logger.error(f"[SUPPORT] Не найден пользователь в БД (chat_id={message.chat.id})")
+            await message.answer("❌ Ошибка: вы не авторизованы.")
+            return
 
-    user = await get_user_by_chat_id(message.chat.id)
-    if not user:
-        logger.error(f"[SUPPORT] Не найден пользователь в БД (chat_id={message.chat.id})")
-        await message.answer("❌ Ошибка: вы не авторизованы.")
-        return
+        contract_title = user.get("contract_title")
 
-    contract_title = user.get("contract_title")
+        text = (
+            f"📨 Сообщение от абонента:\n"
+            f"👤 Пользователь: {message.from_user.full_name} (id={message.chat.id})\n"
+            f"📄 Договор: {contract_title}\n\n"
+            f"{message.text}"
+        )
 
-    text = (
-        f"📨 Сообщение от абонента:\n"
-        f"👤 Пользователь: {message.from_user.full_name} (id={message.chat.id})\n"
-        f"📄 Договор: {contract_title}\n\n"
-        f"{message.text}"
-    )
+        try:
+            support_msg = await message.bot.send_message(SUPPORT_CHAT_ID, text)
+            await save_message_mapping(message.chat.id, message.message_id, support_msg.message_id)
 
-    try:
-        support_msg = await message.bot.send_message(SUPPORT_CHAT_ID, text)
-        await save_message_mapping(message.chat.id, message.message_id, support_msg.message_id)
+            logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
+                        f"отправил сообщение в поддержку: {message.text}")
 
-        logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
-                    f"отправил сообщение в поддержку: {message.text}")
-
-        await message.answer("✅ Ваше сообщение принято. Скоро оператор ответит.")
-    except Exception as e:
-        logger.exception(f"[SUPPORT] Ошибка пересылки сообщения в поддержку: {e}")
-        await message.answer("⚠️ Ошибка при отправке сообщения в поддержку.")
+            await message.answer("✅ Ваше сообщение принято. Скоро оператор ответит.")
+        except Exception as e:
+            logger.exception(f"[SUPPORT] Ошибка пересылки сообщения в поддержку: {e}")
+            await message.answer("⚠️ Ошибка при отправке сообщения в поддержку.")
 
 # ==============================
 # 🔄 Ответы от оператора (reply)
