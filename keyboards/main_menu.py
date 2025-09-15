@@ -1,6 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message
-from aiogram import Router, F
-from config import SUPPORT_PHONE, BILLING_PHONE
+from aiogram import Router
 from db.users import get_user_by_chat_id
 
 router = Router()
@@ -40,20 +39,6 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         one_time_keyboard=False
     )
-
-# ==============================
-# 📞 Обработчики звонков
-# ==============================
-
-@router.message(F.text == "📞 Позвонить в абонентский отдел")
-async def call_billing(message: Message):
-    await message.answer(f"📞 Номер абонентского отдела: {BILLING_PHONE}")
-
-
-@router.message(F.text == "📞 Позвонить в техподдержку")
-async def call_support(message: Message):
-    await message.answer(f"📞 Номер технической поддержки: {SUPPORT_PHONE}")
-
 
 # ==============================
 # ✉️ Техническая поддержка 
