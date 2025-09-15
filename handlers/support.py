@@ -57,6 +57,28 @@ async def exit_support(message: Message):
         reply_markup=await get_main_menu(message.chat.id)
     )
 
+def format_reply_info(msg: Message) -> str:
+    """
+    Формирует строку с информацией об оригинальном сообщении (для reply).
+    """
+    if msg.text:
+        return msg.text
+    if msg.photo:
+        return "[фото]"
+    if msg.document:
+        return f"[документ: {msg.document.file_name}]"
+    if msg.voice:
+        return "[голосовое сообщение]"
+    if msg.video:
+        return "[видео]"
+    if msg.audio:
+        return f"[аудио: {msg.audio.file_name}]"
+    if msg.sticker:
+        return "[стикер]"
+    return "[медиа]"
+
+
+
 @router.message()
 async def forward_message(message: Message):
     """
@@ -69,7 +91,7 @@ async def forward_message(message: Message):
     # =============================
     if str(message.chat.id) == str(SUPPORT_CHAT_ID):
         if not message.reply_to_message:
-            logger.debug(f"[SUPPORT] Оператор написал без reply: {message.text}")
+            logger.debug(f"[SUPPORT] Оператор написал без reply: {message.text or '[медиа]'}")
             return
 
         mapping = await get_user_by_support_msg_id(message.reply_to_message.message_id)
@@ -81,13 +103,14 @@ async def forward_message(message: Message):
         reply_text = f"📩 Ответ от оператора:\n{message.text or '[медиа]'}"
 
         try:
-            await message.bot.send_message(
+            # Пересылаем как есть (с медиа, если было)
+            sent_msg = await message.copy_to(
                 chat_id=chat_id,
-                text=reply_text,
                 reply_to_message_id=user_message_id
             )
+
             logger.info(f"[SUPPORT] Оператор ({message.from_user.id}) "
-                        f"ответил пользователю {chat_id}: {message.text}")
+                        f"ответил пользователю {chat_id}: {message.text or '[медиа]'}")
         except Exception as e:
             logger.exception(f"[SUPPORT] Ошибка отправки ответа пользователю {chat_id}: {e}")
         return
@@ -103,19 +126,32 @@ async def forward_message(message: Message):
 
     contract_title = user.get("contract_title")
 
-    text = (
+    # Если абонент отвечает на сообщение
+    reply_info = ""
+    if message.reply_to_message:
+        original_preview = format_reply_info(message.reply_to_message)
+        reply_info = f"\n\n↩️ Ответ на сообщение:\n{original_preview}"
+
+    # Формируем заголовок
+    header = (
         f"📨 Сообщение от абонента:\n"
         f"👤 Пользователь: {message.from_user.full_name} (id={message.chat.id})\n"
-        f"📄 Договор: {contract_title}\n\n"
-        f"{message.text or '[медиа]'}"
+        f"📄 Договор: {contract_title}"
+        f"{reply_info}\n\n"
     )
 
     try:
-        support_msg = await message.bot.send_message(SUPPORT_CHAT_ID, text)
-        await save_message_mapping(message.chat.id, message.message_id, support_msg.message_id)
+        # Сначала шлём заголовок
+        header_msg = await message.bot.send_message(SUPPORT_CHAT_ID, header)
+
+        # Потом пересылаем оригинал (с медиа, если есть)
+        sent_msg = await message.copy_to(SUPPORT_CHAT_ID)
+
+        # Сохраняем связь для reply (по медиа/тексту)
+        await save_message_mapping(message.chat.id, message.message_id, sent_msg.message_id)
 
         logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
-                    f"отправил сообщение оператору {SUPPORT_CHAT_ID}: {message.text}")
+                    f"отправил сообщение оператору {SUPPORT_CHAT_ID}: {message.text or '[медиа]'}")
 
         await message.answer("✅ Ваше сообщение принято. Скоро оператор ответит.")
     except Exception as e:
