@@ -46,8 +46,8 @@ async def process_amount(message: Message, state: FSMContext):
         f"https://payframe.ckassa.ru/"
         f"?service={PAYMENT_SHOP_ID}"
         f"&Л_СЧЕТ={contract_title}"
-        f"&amount={amount}"
-        f"&amount_read_only=true"
+        f"&amount={amount}"*100
+        f"&amount_read_only=false"
     )
 
     # Логируем событие
