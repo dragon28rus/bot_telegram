@@ -98,12 +98,16 @@ async def forward_to_support(message: Message):
 # ==============================
 # 🔄 Ответы от оператора (reply)
 # ==============================
-@router.message(F.chat.id == int(SUPPORT_CHAT_ID))
+@router.message()
 async def operator_reply(message: Message):
     """
     Обработка сообщений в чате поддержки.
     Если это reply на сообщение абонента → пересылаем абоненту.
     """
+    # Проверяем, что сообщение пришло именно из чата поддержки
+    if str(message.chat.id) != str(SUPPORT_CHAT_ID):
+        return
+
     if not message.reply_to_message:
         logger.debug(f"[SUPPORT] Сообщение в чате поддержки без reply: {message.text}")
         return
