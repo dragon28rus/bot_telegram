@@ -4,6 +4,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, R
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
+from keyboards.main_menu import get_main_menu
 from config import PAYMENT_SHOP_ID
 from db.users import get_user_by_chat_id
 from logger import logger
@@ -20,7 +21,7 @@ def get_cancel_keyboard() -> ReplyKeyboardMarkup:
     Клавиатура с кнопкой отмены.
     """
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="❌ Отмена")]],
+        keyboard=[[KeyboardButton(text="❌ Отмена платежа")]],
         resize_keyboard=True,
         one_time_keyboard=True
     )
@@ -38,7 +39,7 @@ async def ask_amount(message: Message, state: FSMContext):
     )
 
 
-@router.message(F.text == "❌ Отмена")
+@router.message(F.text == "❌ Отмена платежа")
 async def cancel_payment(message: Message, state: FSMContext):
     """
     Отмена операции оплаты.
@@ -54,7 +55,7 @@ async def cancel_payment(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
         "❌ Оплата отменена. Вы вернулись в главное меню.",
-        reply_markup=None  # убираем временную клавиатуру
+        reply_markup=await get_main_menu(message.chat.id)
     )
 
 
