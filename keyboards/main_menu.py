@@ -1,5 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message
-from aiogram import Router
+from aiogram import Router, F
 from config import SUPPORT_PHONE, BILLING_PHONE
 from db.users import get_user_by_chat_id
 
@@ -45,12 +45,12 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
 # 📞 Обработчики звонков
 # ==============================
 
-@router.message(lambda msg: msg.text == "📞 Позвонить в абонентский отдел")
+@router.message(F.text == "📞 Позвонить в абонентский отдел")
 async def call_billing(message: Message):
     await message.answer(f"📞 Номер абонентского отдела: {BILLING_PHONE}")
 
 
-@router.message(lambda msg: msg.text == "📞 Позвонить в техподдержку")
+@router.message(F.text == "📞 Позвонить в техподдержку")
 async def call_support(message: Message):
     await message.answer(f"📞 Номер технической поддержки: {SUPPORT_PHONE}")
 
