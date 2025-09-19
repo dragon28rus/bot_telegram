@@ -47,7 +47,7 @@ async def enter_support(message: Message):
     Вход в режим общения с техподдержкой.
     """
     user = await get_user_by_chat_id(message.chat.id)
-    contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
+    contract_title = str(user.get("contract_title")) if user else "Не авторизованный пользователь"
 
     await start_session(message.chat.id, contract_title)
 
@@ -125,6 +125,10 @@ async def forward_message(message: Message):
 
     # Проверяем, что абонент в режиме поддержки
     if not await is_in_support(message.chat.id):
+        return
+    
+    if message.voice:
+        await message.answer("⚠️ Извините, голосовые сообщения не поддерживаются")
         return
 
     # Если абонент отвечает на сообщение

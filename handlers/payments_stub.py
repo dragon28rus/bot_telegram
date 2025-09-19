@@ -11,7 +11,6 @@ from logger import logger
 
 router = Router()
 
-
 class PaymentState(StatesGroup):
     waiting_for_amount = State()
 

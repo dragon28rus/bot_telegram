@@ -1,3 +1,5 @@
+# services/bgbilling_custom.py
+# штатный Web API биллинга
 import aiohttp
 import asyncio
 from aiohttp import ClientTimeout, ClientError
