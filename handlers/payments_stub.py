@@ -20,7 +20,7 @@ def get_cancel_keyboard() -> ReplyKeyboardMarkup:
     Клавиатура с кнопкой отмены.
     """
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="❌ Отмена платежа")]],
+        keyboard=[[KeyboardButton(text="⬅️ Вернуться в главное меню")]],
         resize_keyboard=True,
         one_time_keyboard=True
     )
@@ -37,8 +37,8 @@ async def ask_amount(message: Message, state: FSMContext):
         reply_markup=get_cancel_keyboard()
     )
 
-@router.callback_query(F.data == "cancel_payment")
-async def cancel_payment(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "back_to_main")
+async def back_to_main(callback: CallbackQuery, state: FSMContext):
     """
     Отмена операции оплаты.
     """
@@ -53,15 +53,15 @@ async def cancel_payment(callback: CallbackQuery, state: FSMContext):
     await state.clear()
 
     # отвечаем на сам callback (чтобы Telegram не жаловался)
-    await callback.answer("❌ Оплата отменена")
+    await callback.answer("Возврат в меню")
 
     # редактируем сообщение с кнопками или шлём новое
     await callback.message.answer(
-        "❌ Оплата отменена. Вы вернулись в главное меню.",
+        "⬅️ Вы вернулись в главное меню.",
         reply_markup=await get_main_menu(callback.message.chat.id)
     )
 
-@router.message(PaymentState.waiting_for_amount, F.text == "❌ Отмена платежа")
+@router.message(PaymentState.waiting_for_amount, F.text == "⬅️ Вернуться в главное меню")
 async def cancel_payment_text(message: Message, state: FSMContext):
     user = await get_user_by_chat_id(message.chat.id)
     contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
@@ -73,7 +73,7 @@ async def cancel_payment_text(message: Message, state: FSMContext):
 
     await state.clear()
     await message.answer(
-        "❌ Оплата отменена. Вы вернулись в главное меню.",
+        "⬅️ Вы вернулись в главное меню.",
         reply_markup=await get_main_menu(message.chat.id)
     )
 
@@ -118,7 +118,7 @@ async def process_amount(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="💳 Перейти к оплате", url=url)],
-            [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="cancel_payment")]
+            [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="back_to_main")]
         ]
     )
 
@@ -137,11 +137,11 @@ async def invalid_amount(message: Message, state: FSMContext):
     Ловим любые некорректные ответы в состоянии ожидания суммы.
     """
     await message.answer("❌ Введите корректную сумму (например: 200 или 1500.50) "
-                         "или нажмите «❌ Отмена».")
+                         "или нажмите «⬅️ Вернуться в главное меню».")
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="❌ Отмена платежа", callback_data="cancel_payment")]
+            [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="cancel_payment")]
         ]
     )
     await message.answer(reply_markup=keyboard)
