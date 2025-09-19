@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message,  InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from logger import logger
@@ -51,7 +51,14 @@ async def process_contract_id(message: Message, state: FSMContext):
         await state.clear()
         return
     elif not contract_id.isdigit() or not (3 <= len(contract_id) <= 6):
-        await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова:")
+        await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова:"
+                             " или нажмите «⬅️ Вернуться в главное меню».")
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="back_to_main")]
+            ]
+        )
+        await message.answer(reply_markup=keyboard)
         return
 
     await state.update_data(contract_id=contract_id)

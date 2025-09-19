@@ -141,7 +141,7 @@ async def invalid_amount(message: Message, state: FSMContext):
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="cancel_payment")]
+            [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="back_to_main")]
         ]
     )
     await message.answer(reply_markup=keyboard)
