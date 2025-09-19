@@ -1,6 +1,6 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from aiogram import Router
+from aiogram import Router, types
 from db.users import get_user_by_chat_id
 from config import SUPPORT_CHAT_ID
 
