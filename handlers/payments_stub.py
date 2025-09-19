@@ -1,6 +1,6 @@
 # handlers/payments_stub.py
 from aiogram import Router, F
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
@@ -37,18 +37,38 @@ async def ask_amount(message: Message, state: FSMContext):
         reply_markup=get_cancel_keyboard()
     )
 
-
 @router.callback_query(F.data == "cancel_payment")
-async def cancel_payment(message: Message, state: FSMContext):
+async def cancel_payment(callback: CallbackQuery, state: FSMContext):
     """
     Отмена операции оплаты.
     """
+    user = await get_user_by_chat_id(callback.message.chat.id)
+    contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
+
+    logger.info(
+        f"[PAYMENTS] Пользователь {callback.from_user.full_name} (chat_id={callback.message.chat.id}) "
+        f"с договором '{contract_title}' отменил оплату."
+    )
+
+    await state.clear()
+
+    # отвечаем на сам callback (чтобы Telegram не жаловался)
+    await callback.answer("❌ Оплата отменена")
+
+    # редактируем сообщение с кнопками или шлём новое
+    await callback.message.answer(
+        "❌ Оплата отменена. Вы вернулись в главное меню.",
+        reply_markup=await get_main_menu(callback.message.chat.id)
+    )
+
+@router.message(PaymentState.waiting_for_amount, F.text == "❌ Отмена платежа")
+async def cancel_payment_text(message: Message, state: FSMContext):
     user = await get_user_by_chat_id(message.chat.id)
     contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
 
     logger.info(
         f"[PAYMENTS] Пользователь {message.from_user.full_name} (chat_id={message.chat.id}) "
-        f"с договором '{contract_title}' отменил оплату."
+        f"с договором '{contract_title}' отменил оплату (reply-кнопка)."
     )
 
     await state.clear()
