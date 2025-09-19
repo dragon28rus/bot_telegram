@@ -97,7 +97,7 @@ async def process_amount(message: Message, state: FSMContext):
     # Кнопка оплаты
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="💳 Перейти к оплате", url=url)]
+            [InlineKeyboardButton(text="💳 Перейти к оплате", url=url)],
             [InlineKeyboardButton(text="❌ Отмена платежа", callback_data="cancel_payment")]
         ]
     )
