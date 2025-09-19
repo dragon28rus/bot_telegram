@@ -47,8 +47,8 @@ async def process_contract_id(message: Message, state: FSMContext):
     contract_id = message.text.strip()
     if F.text == "❌ Выйти из режима вторизации":
         await message.answer("🚪 Вы вышли из режима авторизации.")
-        await state.clear()
         await get_main_menu(message.chat.id)
+        await state.clear()
         return
     elif not contract_id.isdigit() or not (3 <= len(contract_id) <= 6):
         await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова:")
@@ -75,8 +75,8 @@ async def process_password(message: Message, state: FSMContext):
 
     if F.text == "❌ Выйти из режима вторизации":
         await message.answer("🚪 Вы вышли из режима авторизации.")
-        await state.clear()
         await get_main_menu(message.chat.id)
+        await state.clear()
         return
     try:
         result: Optional[Dict[str, Any]] = await authenticate(contract_input, password)
