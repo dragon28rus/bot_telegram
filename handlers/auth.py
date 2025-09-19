@@ -73,7 +73,7 @@ async def process_password(message: Message, state: FSMContext):
 
     logger.debug(f"[auth] Попытка авторизации: chat_id={chat_id}, input_contract='{contract_input}'")
 
-    if message.text == "❌ Выйти из режима вторизации":
+    if message.text == "❌ Выйти из режима авторизации":
         keyboard = await get_main_menu(message.chat.id)
         await message.answer("🚪 Вы вышли из режима авторизации.", reply_markup=keyboard)
         await state.clear()
