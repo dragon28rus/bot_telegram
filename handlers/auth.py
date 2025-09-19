@@ -54,13 +54,12 @@ async def process_contract_id(message: Message, state: FSMContext):
     
     contract_id = message.text.strip()
     if not contract_id.isdigit() or not (3 <= len(contract_id) <= 6):
-        await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова.")
         keyboard_inline = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="back_to_main")]
             ]
         )
-        await message.answer("Выберите действие:", reply_markup=keyboard_inline)
+        await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова.", reply_markup=keyboard_inline)
         return
 
     await state.update_data(contract_id=contract_id)
@@ -111,7 +110,12 @@ async def process_password(message: Message, state: FSMContext):
         # Если API вернул status, смотрим на него
         if result.get("status") and result.get("status") != "Ok":
             logger.warning(f"Неверные учётные данные: chat_id={chat_id}, input='{contract_input}', api_status={result.get('status')}")
-            await message.answer("❌ Неверный номер договора или пароль.")
+            keyboard_inline = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="back_to_main")]
+                ]
+            )
+            await message.answer("❌ Неверный номер договора или пароль.", reply_markup=keyboard_inline)
             return
 
         # получаем resolved ID и title (в приоритете нормализованные ключи)
