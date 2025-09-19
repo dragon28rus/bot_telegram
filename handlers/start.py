@@ -9,7 +9,6 @@ from logger import logger
 
 router = Router()
 
-
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     chat_id = message.chat.id
