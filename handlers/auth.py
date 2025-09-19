@@ -32,7 +32,7 @@ async def start_auth(message: Message, state: FSMContext):
 async def start_auth_button(message: Message, state: FSMContext):
     """Обработка кнопки 'Авторизоваться' из меню."""
     chat_id = str(message.chat.id)
-    if {chat_id} == {SUPPORT_CHAT_ID}:
+    if str(chat_id) == str(SUPPORT_CHAT_ID):
         # Аккаунт технической поддержки
         keyboard = await get_main_menu(int(chat_id))
         await message.answer("✅ Авторизация прошла успешно!", reply_markup=keyboard)

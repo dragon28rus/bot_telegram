@@ -22,7 +22,7 @@ async def cmd_start(message: Message):
             f"Ваш договор: <b>{user['contract_title']}</b>\n\n"
             f"Выберите действие:"
         )
-    elif {chat_id} == {SUPPORT_CHAT_ID}:
+    elif str(chat_id) == str(SUPPORT_CHAT_ID):
         logger.info(f"Пользователь {chat_id} авторизован как служба технической поддержки")
         text = (
             "👋 Добро пожаловать!\n"
