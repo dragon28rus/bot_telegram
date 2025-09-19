@@ -38,7 +38,7 @@ async def ask_amount(message: Message, state: FSMContext):
     )
 
 
-@router.message(F.text == "❌ Отмена платежа")
+@router.callback_query(F.data == "cancel_payment")
 async def cancel_payment(message: Message, state: FSMContext):
     """
     Отмена операции оплаты.
@@ -56,7 +56,6 @@ async def cancel_payment(message: Message, state: FSMContext):
         "❌ Оплата отменена. Вы вернулись в главное меню.",
         reply_markup=await get_main_menu(message.chat.id)
     )
-
 
 @router.message(PaymentState.waiting_for_amount, F.text.regexp(r"^\d+[.,]?\d*$"))
 async def process_amount(message: Message, state: FSMContext):
@@ -85,7 +84,7 @@ async def process_amount(message: Message, state: FSMContext):
         f"?service={PAYMENT_SHOP_ID}"
         f"&Л_СЧЕТ={contract_title}"
         f"&amount={amount}"
-        f"&amount_read_only=true"
+        f"&amount_read_only=false"
     )
 
     # Логируем событие
@@ -99,6 +98,7 @@ async def process_amount(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="💳 Перейти к оплате", url=url)]
+            [InlineKeyboardButton(text="❌ Отмена платежа", callback_data="cancel_payment")]
         ]
     )
 

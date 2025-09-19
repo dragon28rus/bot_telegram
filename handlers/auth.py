@@ -66,8 +66,7 @@ async def process_password(message: Message, state: FSMContext):
       - корректно извлекаем resolved contract_id и contract_title
       - сохраняем оба поля в БД
     """
-    
-    
+
     data = await state.get_data()
     contract_input = data.get("contract_id") or data.get("contract")  # что ввёл пользователь
     password = message.text.strip()
