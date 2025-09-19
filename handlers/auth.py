@@ -8,7 +8,7 @@ from logger import logger
 
 from services.bgbilling import authenticate
 from db.users import add_user
-from keyboards.main_menu import get_main_menu
+from keyboards.main_menu import get_main_menu, get_auth_menu
 from config import SUPPORT_CHAT_ID
 
 router = Router()
@@ -25,6 +25,7 @@ async def start_auth(message: Message, state: FSMContext):
     Запрашивает номер договора.
     """
     await message.answer("Введите номер договора (3–6 цифр):")
+    reply_markup=await get_auth_menu()
     await state.set_state(AuthStates.waiting_for_contract_id)
 
 @router.message(lambda msg: msg.text == "🔑 Авторизоваться")
@@ -112,3 +113,16 @@ async def process_password(message: Message, state: FSMContext):
         await message.answer("⚠️ Ошибка при попытке авторизации. Попробуйте позже.")
     finally:
         await state.clear()
+
+    # ==============================
+    # ❌ Выход из режима авторизации
+    # ==============================
+    @router.message(F.text == "❌ Выйти из режима вторизации")
+    async def exit_support(message: Message):
+        """
+        Выход из режима авторизации.
+        """
+        await message.answer(
+            "🚪 Вы вышли из режима автьоризации.",
+            reply_markup=await get_main_menu(message.chat.id)
+        )
