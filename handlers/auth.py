@@ -122,7 +122,7 @@ async def process_password(message: Message, state: FSMContext):
         """
         Выход из режима авторизации.
         """
-        await message.answer(
-            "🚪 Вы вышли из режима автьоризации.",
+        await message.reply(
+            "🚪 Вы вышли из режима авторизации.",state=None, 
             reply_markup=await get_main_menu(message.chat.id)
         )

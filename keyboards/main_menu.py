@@ -68,7 +68,7 @@ async def get_auth_menu() -> ReplyKeyboardMarkup:
     Клавиатура для режима авторизации.
     """
     keyboard = [
-        [KeyboardButton(text="❌ Выйти из режима вторизации")]
+        [KeyboardButton(text="❌ Выйти из режима авторизации")]
     ]
     return ReplyKeyboardMarkup(
         keyboard=keyboard,
