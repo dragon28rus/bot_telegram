@@ -66,16 +66,18 @@ async def process_password(message: Message, state: FSMContext):
       - корректно извлекаем resolved contract_id и contract_title
       - сохраняем оба поля в БД
     """
+    
+    
+    data = await state.get_data()
+    contract_input = data.get("contract_id") or data.get("contract")  # что ввёл пользователь
+    password = message.text.strip()
 
     if message.text == "❌ Выйти из режима авторизации":
         keyboard = await get_main_menu(message.chat.id)
         await message.answer("🚪 Вы вышли из режима авторизации.", reply_markup=keyboard)
         await state.clear()
         return
-    
-    data = await state.get_data()
-    contract_input = data.get("contract_id") or data.get("contract")  # что ввёл пользователь
-    password = message.text.strip()
+
     chat_id = str(message.chat.id)
 
     logger.debug(f"[auth] Попытка авторизации: chat_id={chat_id}, input_contract='{contract_input}'")
