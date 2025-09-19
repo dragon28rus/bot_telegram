@@ -24,7 +24,8 @@ async def start_auth(message: Message, state: FSMContext):
     Хэндлер для начала авторизации.
     Запрашивает номер договора.
     """
-    await message.answer("Введите номер договора (3–6 цифр):")
+    keyboard = await get_auth_menu()
+    await message.answer("Введите номер договора (3–6 цифр):", reply_markup=keyboard)
     await state.set_state(AuthStates.waiting_for_contract_id)
 
 @router.message(lambda msg: msg.text == "🔑 Авторизоваться")
@@ -36,8 +37,6 @@ async def start_auth_button(message: Message, state: FSMContext):
         keyboard = await get_main_menu(chat_id)
         await message.answer("✅ Авторизация прошла успешно!", reply_markup=keyboard)
     else:
-        keyboard = await get_auth_menu()
-        await message.answer(reply_markup=keyboard)
         await start_auth(message, state)
 
 @router.message(AuthStates.waiting_for_contract_id)
