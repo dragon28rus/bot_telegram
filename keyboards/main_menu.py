@@ -1,6 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram import Router
 from db.users import get_user_by_chat_id
+from config import SUPPORT_CHAT_ID
 
 router = Router()
 
@@ -24,6 +25,12 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
             [KeyboardButton(text="📞 Позвонить в абонентский отдел")],
             [KeyboardButton(text="📞 Позвонить в техподдержку")],
             [KeyboardButton(text="🔓 Отвязать договор")],
+        ]
+    elif {chat_id} == {SUPPORT_CHAT_ID}:
+        # Аккаунт технической поддержки
+        keyboard = [
+            [KeyboardButton(text="✉️ Написать абоненту")],
+            [KeyboardButton(text="✉️ Масовая рассылка")],
         ]
     else:
         # Неавторизованный пользователь

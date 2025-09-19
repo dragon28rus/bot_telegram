@@ -9,6 +9,7 @@ from logger import logger
 from services.bgbilling import authenticate
 from db.users import add_user
 from keyboards.main_menu import get_main_menu
+from config import SUPPORT_CHAT_ID
 
 router = Router()
 
@@ -29,7 +30,13 @@ async def start_auth(message: Message, state: FSMContext):
 @router.message(lambda msg: msg.text == "🔑 Авторизоваться")
 async def start_auth_button(message: Message, state: FSMContext):
     """Обработка кнопки 'Авторизоваться' из меню."""
-    await start_auth(message, state)
+    chat_id = str(message.chat.id)
+    if {chat_id} == {SUPPORT_CHAT_ID}:
+        # Аккаунт технической поддержки
+        keyboard = await get_main_menu(chat_id)
+        await message.answer("✅ Авторизация прошла успешно!", reply_markup=keyboard)
+    else:
+        await start_auth(message, state)
 
 @router.message(AuthStates.waiting_for_contract_id)
 async def process_contract_id(message: Message, state: FSMContext):

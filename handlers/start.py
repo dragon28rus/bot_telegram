@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from keyboards.main_menu import get_main_menu
+from config import SUPPORT_CHAT_ID
 from db.users import get_user_by_chat_id
 from logger import logger
 
@@ -21,6 +22,12 @@ async def cmd_start(message: Message):
             f"👋 Добро пожаловать снова!\n"
             f"Ваш договор: <b>{user['contract_title']}</b>\n\n"
             f"Выберите действие:"
+        )
+    elif {chat_id} == {SUPPORT_CHAT_ID}:
+        logger.info(f"Пользователь {chat_id} авторизован как служба технической поддержки")
+        text = (
+            "👋 Добро пожаловать!\n"
+            "Вы авторизованы как служба технической поддержки"
         )
     else:
         text = (
