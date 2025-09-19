@@ -51,7 +51,7 @@ async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str]
 
         await db.commit()
 
-async def get_user_by_chat_id(chat_id: str) -> Optional[dict]:
+async def get_user_by_chat_id(chat_id: int) -> Optional[dict]:
     """
     Возвращает пользователя по chat_id в виде словаря.
     """

@@ -5,7 +5,6 @@ from config import SUPPORT_CHAT_ID
 
 router = Router()
 
-
 async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
     """
     Формирует главное меню (ReplyKeyboard) в зависимости от того,
