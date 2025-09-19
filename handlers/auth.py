@@ -37,6 +37,7 @@ async def start_auth_button(message: Message, state: FSMContext):
         await message.answer("✅ Авторизация прошла успешно!", reply_markup=keyboard)
     else:
         keyboard = await get_auth_menu()
+        await message.answer(reply_markup=keyboard)
         await start_auth(message, state)
 
 @router.message(AuthStates.waiting_for_contract_id)
