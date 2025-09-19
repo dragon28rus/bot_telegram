@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message,  InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from logger import logger
@@ -28,42 +28,54 @@ async def start_auth(message: Message, state: FSMContext):
     await message.answer("Введите номер договора (3–6 цифр):", reply_markup=keyboard)
     await state.set_state(AuthStates.waiting_for_contract_id)
 
+
 @router.message(lambda msg: msg.text == "🔑 Авторизоваться")
 async def start_auth_button(message: Message, state: FSMContext):
     """Обработка кнопки 'Авторизоваться' из меню."""
-    chat_id = str(message.chat.id)
-    if str(chat_id) == str(SUPPORT_CHAT_ID):
+    chat_id = message.chat.id
+    if chat_id == SUPPORT_CHAT_ID:
         # Аккаунт технической поддержки
-        keyboard = await get_main_menu(int(chat_id))
-        await message.answer("✅ Авторизация прошла успешно!", reply_markup=keyboard)
+        keyboard = await get_main_menu(chat_id)
+        await message.answer("✅ Вы уже авторизованы как техподдержка!", reply_markup=keyboard)
     else:
         await start_auth(message, state)
+
 
 @router.message(AuthStates.waiting_for_contract_id)
 async def process_contract_id(message: Message, state: FSMContext):
     """
     Обработка номера договора.
     """
-    contract_id = message.text.strip()
     if message.text == "❌ Выйти из режима авторизации":
         keyboard = await get_main_menu(message.chat.id)
         await message.answer("🚪 Вы вышли из режима авторизации.", reply_markup=keyboard)
         await state.clear()
         return
-    elif not contract_id.isdigit() or not (3 <= len(contract_id) <= 6):
-        await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова:"
-                             " или нажмите «⬅️ Вернуться в главное меню».")
-        keyboard = InlineKeyboardMarkup(
+    
+    contract_id = message.text.strip()
+    if not contract_id.isdigit() or not (3 <= len(contract_id) <= 6):
+        await message.answer("❌ Номер договора должен содержать от 3 до 6 цифр. Попробуйте снова.")
+        keyboard_inline = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="back_to_main")]
             ]
         )
-        await message.answer(reply_markup=keyboard)
+        await message.answer("Выберите действие:", reply_markup=keyboard_inline)
         return
 
     await state.update_data(contract_id=contract_id)
     await message.answer("Введите пароль статистики:")
     await state.set_state(AuthStates.waiting_for_password)
+
+
+@router.callback_query(F.data == "back_to_main")
+async def back_to_main_menu(callback: CallbackQuery, state: FSMContext):
+    """Хэндлер для возврата в главное меню через inline-кнопку."""
+    await state.clear()
+    keyboard = await get_main_menu(callback.message.chat.id)
+    await callback.message.answer("Вы вернулись в главное меню.", reply_markup=keyboard)
+    await callback.answer()
+
 
 @router.message(AuthStates.waiting_for_password)
 async def process_password(message: Message, state: FSMContext):
@@ -73,16 +85,15 @@ async def process_password(message: Message, state: FSMContext):
       - корректно извлекаем resolved contract_id и contract_title
       - сохраняем оба поля в БД
     """
-
-    data = await state.get_data()
-    contract_input = data.get("contract_id") or data.get("contract")  # что ввёл пользователь
-    password = message.text.strip()
-
     if message.text == "❌ Выйти из режима авторизации":
         keyboard = await get_main_menu(message.chat.id)
         await message.answer("🚪 Вы вышли из режима авторизации.", reply_markup=keyboard)
         await state.clear()
         return
+
+    data = await state.get_data()
+    contract_input = data.get("contract_id") or data.get("contract")
+    password = message.text.strip()
 
     chat_id = str(message.chat.id)
 
@@ -95,14 +106,12 @@ async def process_password(message: Message, state: FSMContext):
         if result is None:
             logger.warning(f"Ошибка авторизации: chat_id={chat_id}, input='{contract_input}', result=None")
             await message.answer("❌ Ошибка авторизации. Попробуйте позже.")
-            await state.clear()
             return
 
         # Если API вернул status, смотрим на него
         if result.get("status") and result.get("status") != "Ok":
             logger.warning(f"Неверные учётные данные: chat_id={chat_id}, input='{contract_input}', api_status={result.get('status')}")
             await message.answer("❌ Неверный номер договора или пароль.")
-            await state.clear()
             return
 
         # получаем resolved ID и title (в приоритете нормализованные ключи)
@@ -113,7 +122,6 @@ async def process_password(message: Message, state: FSMContext):
             # на всякий случай — если ID не пришёл
             logger.error(f"[auth] Авторизация прошла, но contract_id не найден: chat_id={chat_id}, result={result}")
             await message.answer("❌ Не удалось определить ID договора после авторизации.")
-            await state.clear()
             return
 
         # Сохраняем в БД (contract_id — как строка)
