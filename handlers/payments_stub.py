@@ -118,7 +118,7 @@ async def process_amount(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="💳 Перейти к оплате", url=url)],
-            [InlineKeyboardButton(text="❌ Отмена платежа", callback_data="cancel_payment")]
+            [InlineKeyboardButton(text="⬅️ Вернуться в главное меню", callback_data="cancel_payment")]
         ]
     )
 
@@ -138,3 +138,10 @@ async def invalid_amount(message: Message, state: FSMContext):
     """
     await message.answer("❌ Введите корректную сумму (например: 200 или 1500.50) "
                          "или нажмите «❌ Отмена».")
+    
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена платежа", callback_data="cancel_payment")]
+        ]
+    )
+    await message.answer(reply_markup=keyboard)
