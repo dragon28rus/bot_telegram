@@ -1,6 +1,4 @@
 from aiohttp import web
-from aiogram import Bot
-from config import BOT_TOKEN
 from db.users import get_chat_id_by_contract_id, get_all_chat_ids
 from logger import logger, set_chat_id  # 👈 добавили set_chat_id
 
@@ -40,6 +38,7 @@ async def handle_broadcast_notification(request: web.Request) -> web.Response:
     Обработка рассылки от биллинга:
     сообщение отправляется всем пользователям.
     """
+    bot = request.app['bot']
     data = await request.json()
     message = data.get("message")
 
