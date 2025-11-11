@@ -45,15 +45,12 @@ async def main():
 
     # --- aiohttp сервер для биллинга ---
     app = web.Application()
+    app['bot'] = bot
 
     # Эндпоинт: сообщение конкретному пользователю
-    app.router.add_post(
-        "/billing/notify", lambda r: handle_billing_notification(r, bot)
-    )
+    app.router.add_post("/billing/notify", handle_billing_notification)
     # Эндпоинт: рассылка всем пользователям
-    app.router.add_post(
-        "/billing/broadcast", lambda r: handle_broadcast_notification(r, bot)
-    )
+    app.router.add_post("/billing/broadcast", handle_broadcast_notification)
 
     logger.info("🚀 Бот запускается...")
 

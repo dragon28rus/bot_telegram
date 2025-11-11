@@ -4,14 +4,12 @@ from config import BOT_TOKEN
 from db.users import get_chat_id_by_contract_id, get_all_chat_ids
 from logger import logger, set_chat_id  # 👈 добавили set_chat_id
 
-bot = Bot(token=BOT_TOKEN)
-
-
 async def handle_billing_notification(request: web.Request) -> web.Response:
     """
     Обработка уведомления от биллинга:
     передаётся contract_id + сообщение, бот отправляет пользователю.
     """
+    bot = request.app['bot']
     data = await request.json()
     contract_id = data.get("contract_id")
     message = data.get("message")
