@@ -2,12 +2,19 @@ from aiogram import Router, F
 from aiogram.types import Message
 from db.users import get_user_by_chat_id
 from services.bgbilling_custom import request_promised_payment
-from keyboards.main_menu import get_main_menu
+from keyboards.main_menu import get_main_menu, lower_limit_menu
 from logger import logger
 
 router = Router()
 
 @router.message(F.text == "👛 Обещанный платеж")
+async def lower_limit(message: Message):
+    await message.answer(
+        "Подтвердите что хотите подключить обещанный платеж",
+        reply_markup=await lower_limit_menu()
+    )
+
+@router.message(F.text == "👌 Да, подключить!")
 async def set_lower_limit(message: Message):
     chat_id = message.chat.id
     user = await get_user_by_chat_id(chat_id)

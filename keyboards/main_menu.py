@@ -50,6 +50,15 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
     return builder.as_markup(resize_keyboard=True, one_time_keyboard=False)
 
 
+async def lower_limit_menu() -> ReplyKeyboardMarkup:
+    """
+    Клавиатура для режима подключения обещанного лпатежа.
+    """
+    builder = ReplyKeyboardBuilder()
+    builder.row(KeyboardButton(text="👌 Да, подключить!"))
+    builder.row(KeyboardButton(text="🔙 Вернуться назад"))
+    return builder.as_markup(resize_keyboard=True, one_time_keyboard=False)
+
 async def get_phone_menu() -> ReplyKeyboardMarkup:
     """
     Клавиатура для режима позвонить.
