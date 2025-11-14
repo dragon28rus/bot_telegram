@@ -34,6 +34,7 @@ async def main():
     dp.include_router(admin.router)
     dp.include_router(auth.router)
     dp.include_router(balance.router)
+    dp.include_router(limit.router)
     dp.include_router(news.router)
     dp.include_router(tariff.router)
     dp.include_router(payments.router)
@@ -42,8 +43,7 @@ async def main():
     dp.include_router(main_menu.router)
     dp.include_router(calls.router)
     dp.include_router(support.router)
-    dp.include_router(limit.router)
-
+    
     # --- aiohttp сервер для биллинга ---
     app = web.Application()
     app['bot'] = bot

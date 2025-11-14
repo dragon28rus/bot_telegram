@@ -1,6 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from aiogram import Router, types
+from aiogram import Router
 from db.users import get_user_by_chat_id
 from config import SUPPORT_CHAT_ID
 
@@ -20,7 +20,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
 		# Авторизованный пользователь
         builder.row(
             KeyboardButton(text="💰 Узнать баланс"),
-            KeyboardButton(text="💸 Обещанный платеж")
+            KeyboardButton(text="Обещанный платеж")
         )
         builder.row(
             KeyboardButton(text="💳 Последние платежи"),
