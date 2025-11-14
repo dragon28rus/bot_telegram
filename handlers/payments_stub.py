@@ -45,7 +45,7 @@ async def ask_amount(message: Message, state: FSMContext):
         if result["success"]:
             total = result["recommend_payment"]
             await message.answer(
-                "Введите сумму, которую хотите оплатить (в рублях, минимум 20), рекомендуемая сумма: {total}",
+                f"Введите сумму, которую хотите оплатить (в рублях, минимум 20), рекомендуемая сумма: {total}",
                 reply_markup=get_cancel_keyboard()
             )
     else:
