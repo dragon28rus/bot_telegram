@@ -7,7 +7,7 @@ from logger import logger
 
 router = Router()
 
-@router.message(F.text == "Обещанный платеж")
+@router.message(F.text == "👛 Обещанный платеж")
 async def set_lower_limit(message: Message):
     chat_id = message.chat.id
     user = await get_user_by_chat_id(chat_id)
@@ -18,17 +18,16 @@ async def set_lower_limit(message: Message):
 
     try:
         limit = await request_promised_payment(user["contract_id"], 5000)
-        if limit:
-            status = limit.get("success", "False")
-            if "True" in  status:
-                await message.answer(
-                    f"💸 Ваш лимит успешно понижен на 5 дней"
-                )
-            else:
-                error = limit.get("error", "")
-                await message.answer("⚠️ Не удалось понизить лимит. Причина: {error}")
+        if limit is None:
+            await message.answer("⚠️ Ошибка связи с биллингом. Попробуйте позднее")
+        elif not limit["success"]:
+            await message.answer(f"⚠️ Не удалось понизить лимит. Причина: {error}:\n{limit['error']}")
         else:
-            await message.answer("⚠️ Не удалось понизить лимит.")
+            await message.answer(
+                f"💸 Ваш лимит успешно понижен!\n"
+                f"Новый лимит: {limit['new_limit']} руб.\n"
+                f"Действует {limit['days']} дней."
+            )
     except Exception as e:
         logger.error(f"Ошибка понижения лимита chat_id={chat_id}: {e}")
         await message.answer("⚠️ Ошибка при понижении лимита.")
