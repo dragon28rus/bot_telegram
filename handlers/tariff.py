@@ -3,6 +3,7 @@ from aiogram.types import Message
 
 from db.users import get_user_by_chat_id
 from services.bgbilling import get_tariff_plan
+from services.bgbilling_custom import get_recommended_payment
 from keyboards.main_menu import get_main_menu
 from logger import logger
 
@@ -19,6 +20,7 @@ async def get_user_tariff(message: Message):
 
     try:
         tariff = await get_tariff_plan(user["contract_id"])
+        cost_tariff = await get_recommended_payment(user["contract_id"])
         if tariff:
             title = tariff.get("title", "—")
             date_from = tariff.get("dateFrom", "")
@@ -26,6 +28,9 @@ async def get_user_tariff(message: Message):
             text = f"📊 Ваш тариф: <b>{title}</b>\nАктивен с {date_from}"
             if date_to:
                 text += f"\nпо {date_to}"
+            if cost_tariff and cost_tariff["success"]:
+                total = cost_tariff["recommend_payment"]
+                text += f"\nРекомендуемая сумма для оплаты: {total}"
             await message.answer(text)
         else:
             await message.answer("⚠️ Не удалось получить тариф.")

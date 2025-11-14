@@ -15,7 +15,6 @@ router = Router()
 class PaymentState(StatesGroup):
     waiting_for_amount = State()
 
-
 def get_cancel_keyboard() -> ReplyKeyboardMarkup:
     """
     Клавиатура с кнопкой отмены.
@@ -25,7 +24,6 @@ def get_cancel_keyboard() -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         one_time_keyboard=True
     )
-
 
 @router.message(F.text == "💵 Оплатить услуги")
 async def ask_amount(message: Message, state: FSMContext):
@@ -41,13 +39,13 @@ async def ask_amount(message: Message, state: FSMContext):
         return
     
     result = await get_recommended_payment(user["contract_id"])
-    if result:
-        if result["success"]:
-            total = result["recommend_payment"]
-            await message.answer(
-                f"Введите сумму, которую хотите оплатить (в рублях, минимум 20), рекомендуемая сумма: {total}",
-                reply_markup=get_cancel_keyboard()
-            )
+    if result and result["success"]:
+        total = result["recommend_payment"]
+        await message.answer(
+            f"Введите сумму, которую хотите оплатить (в рублях, минимум 20)\n"
+            f"Рекомендуемая сумма: {total}",
+            reply_markup=get_cancel_keyboard()
+        )
     else:
         await message.answer(
             "Введите сумму, которую хотите оплатить (в рублях, минимум 20):",
@@ -146,7 +144,6 @@ async def process_amount(message: Message, state: FSMContext):
     )
 
     await state.clear()
-
 
 @router.message(PaymentState.waiting_for_amount)
 async def invalid_amount(message: Message, state: FSMContext):
