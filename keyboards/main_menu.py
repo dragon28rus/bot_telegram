@@ -20,7 +20,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
 		# Авторизованный пользователь
         builder.row(
             KeyboardButton(text="💰 Узнать баланс"),
-            KeyboardButton(text="📊 Текущий тариф")
+            KeyboardButton(text="💸 Обещанный платеж")
         )
         builder.row(
             KeyboardButton(text="💳 Последние платежи"),
@@ -30,6 +30,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
             KeyboardButton(text="📰 Новости"),
             KeyboardButton(text="✉️ Техподдержка")
         )
+        builder.row(KeyboardButton(text="📊 Текущий тариф"))
         builder.row(KeyboardButton(text="📞 Позвонить в абонентский отдел"))
         builder.row(KeyboardButton(text="📞 Позвонить в техподдержку"))
         builder.row(KeyboardButton(text="🔓 Отвязать договор"))

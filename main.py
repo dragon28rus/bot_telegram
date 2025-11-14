@@ -7,7 +7,7 @@ from aiohttp.web_middlewares import middleware
 
 from config import BOT_TOKEN, BILLING_WEBHOOK_PORT
 from logger import logger
-from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support, calls, payments_stub
+from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support, calls, payments_stub, limit
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
 from db.support import init_support_table
@@ -42,6 +42,7 @@ async def main():
     dp.include_router(main_menu.router)
     dp.include_router(calls.router)
     dp.include_router(support.router)
+    dp.include_router(limit.router)
 
     # --- aiohttp сервер для биллинга ---
     app = web.Application()
