@@ -21,7 +21,7 @@ async def set_lower_limit(message: Message):
         if limit is None:
             await message.answer("⚠️ Ошибка связи с биллингом. Попробуйте позднее")
         elif not limit["success"]:
-            await message.answer(f"⚠️ Не удалось понизить лимит. Причина: {error}:\n{limit['error']}")
+            await message.answer(f"⚠️ Не удалось понизить лимит. Причина: \n{limit['error']}")
         else:
             await message.answer(
                 f"💸 Ваш лимит успешно понижен!\n"
