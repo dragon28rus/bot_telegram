@@ -86,3 +86,75 @@ async def request_promised_payment(contract_id: str, amount: int) -> Optional[Di
         return None
     finally:
         await asyncio.sleep(0.05)
+
+async def get_recommended_payment(contract_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Получение рекомендуемой суммы платежа (стоимость тарифного плана + услуги).
+    Эндпоинт: /api/rest/0/telegramApi/recommendPayment?cid={contract_id}
+
+    Возвращает:
+        При успехе:
+            {
+                "success": true,
+                "contract_id": str,
+                "recommend_payment": float,
+                "details": {
+                    "npay": float,
+                    "tv": float,
+                    "cerber": float,
+                    ...
+                }
+            }
+        При ошибке:
+            {
+                "success": false,
+                "error": str
+            }
+        None — при сетевых/таймаут ошибках.
+    """
+    url = f"{BGBILLING_API_URL}/api/rest/0/telegramApi/recommendPayment"
+    params = {"cid": contract_id}
+    logger.debug(f"[get_recommended_payment] Запрос {url} params={params}")
+
+    try:
+        async with aiohttp.ClientSession(
+            auth=aiohttp.BasicAuth(*BGBILLING_AUTH),
+            timeout=ClientTimeout(total=REQUEST_TIMEOUT),
+            connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
+            async with session.get(url, params=params) as response:
+                text = await response.text()
+                logger.debug(f"[get_recommended_payment] Ответ {response.status}: {text[:1000]}")
+
+                if response.status != 200:
+                    logger.error(f"[get_recommended_payment] HTTP {response.status}")
+                    return None
+
+                data = await response.json()
+
+                if data.get("success") is True:
+                    details = data.get("details", {})
+                    result = {
+                        "success": True,
+                        "contract_id": str(data.get("contractId")),
+                        "recommend_payment": float(data.get("recommendPayment", 0)),
+                        "details": {k: float(v) for k, v in details.items()}  # все суммы в float
+                    }
+                    logger.info(f"[get_recommended_payment] Успешно: {result}")
+                    return result
+                else:
+                    error_msg = data.get("error", "Неизвестная ошибка")
+                    logger.warning(f"[get_recommended_payment] Ошибка: {error_msg}")
+                    return {"success": False, "error": error_msg}
+
+    except asyncio.TimeoutError:
+        logger.error("[get_recommended_payment] Таймаут")
+        return None
+    except ClientError as e:
+        logger.error(f"[get_recommended_payment] ClientError: {e}")
+        return None
+    except Exception as e:
+        logger.exception(f"[get_recommended_payment] Неожиданная ошибка: {e}")
+        return None
+    finally:
+        await asyncio.sleep(0.05)

@@ -4,6 +4,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, R
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
+from services.bgbilling_custom import get_recommended_payment
 from keyboards.main_menu import get_main_menu
 from config import PAYMENT_SHOP_ID
 from db.users import get_user_by_chat_id
@@ -32,10 +33,26 @@ async def ask_amount(message: Message, state: FSMContext):
     Пользователь нажал кнопку оплаты — спрашиваем сумму.
     """
     await state.set_state(PaymentState.waiting_for_amount)
-    await message.answer(
-        "Введите сумму, которую хотите оплатить (в рублях, минимум 20):",
-        reply_markup=get_cancel_keyboard()
-    )
+    chat_id = message.chat.id
+    user = await get_user_by_chat_id(chat_id)
+    if not user or not user.get("contract_id"):
+        await state.clear()
+        await message.answer("❌ Сначала авторизуйтесь.", reply_markup=await get_main_menu(chat_id))
+        return
+    
+    result = await get_recommended_payment(user["contract_id"])
+    if result:
+        if result["success"]:
+            total = result["recommend_payment"]
+            await message.answer(
+                "Введите сумму, которую хотите оплатить (в рублях, минимум 20), рекомендуемая сумма: {total}",
+                reply_markup=get_cancel_keyboard()
+            )
+    else:
+        await message.answer(
+            "Введите сумму, которую хотите оплатить (в рублях, минимум 20):",
+            reply_markup=get_cancel_keyboard()
+        )
 
 @router.callback_query(F.data == "back_to_main")
 async def back_to_main(callback: CallbackQuery, state: FSMContext):

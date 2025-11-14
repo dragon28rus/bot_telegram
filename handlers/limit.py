@@ -28,12 +28,14 @@ async def set_lower_limit(message: Message):
         if limit is None:
             await message.answer("⚠️ Ошибка связи с биллингом. Попробуйте позднее")
         elif not limit["success"]:
-            await message.answer(f"⚠️ Не удалось понизить лимит. Причина: \n{limit['error']}")
+            await message.answer(f"⚠️ Не удалось понизить лимит. Причина: \n{limit['error']}", 
+                                 reply_markup=await get_main_menu(message.chat.id))
         else:
             await message.answer(
                 f"💸 Ваш лимит успешно понижен!\n"
                 f"Новый лимит: {limit['new_limit']} руб.\n"
-                f"Действует {limit['days']} дней."
+                f"Действует {limit['days']} дней.",
+                reply_markup=await get_main_menu(message.chat.id)
             )
     except Exception as e:
         logger.error(f"Ошибка понижения лимита chat_id={chat_id}: {e}")
