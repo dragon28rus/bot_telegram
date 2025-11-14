@@ -31,8 +31,7 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
             KeyboardButton(text="✉️ Техподдержка")
         )
         builder.row(KeyboardButton(text="📊 Текущий тариф"))
-        builder.row(KeyboardButton(text="📞 Позвонить в абонентский отдел"))
-        builder.row(KeyboardButton(text="📞 Позвонить в техподдержку"))
+        builder.row(KeyboardButton(text="📞 Позвонить"))
         builder.row(KeyboardButton(text="🔓 Отвязать договор"))
 
     elif int(chat_id) == int(SUPPORT_CHAT_ID):
@@ -46,14 +45,21 @@ async def get_main_menu(chat_id: int) -> ReplyKeyboardMarkup:
 		# Неавторизованный пользователь
         builder.row(KeyboardButton(text="🔑 Авторизоваться"))
         builder.row(KeyboardButton(text="✉️ Техподдержка"))
-        builder.row(KeyboardButton(text="📞 Позвонить в абонентский отдел"))
-        builder.row(KeyboardButton(text="📞 Позвонить в техподдержку"))
+        builder.row(KeyboardButton(text="📞 Позвонить"))
 
     return builder.as_markup(resize_keyboard=True, one_time_keyboard=False)
 
-# ==============================
-# ✉️ Техническая поддержка 
-# ==============================
+
+async def get_phone_menu() -> ReplyKeyboardMarkup:
+    """
+    Клавиатура для режима позвонить.
+    """
+    builder = ReplyKeyboardBuilder()
+    builder.row(KeyboardButton(text="📞 Позвонить в абонентский отдел"))
+    builder.row(KeyboardButton(text="📞 Позвонить в техническую поддержку"))
+    builder.row(KeyboardButton(text="🔙 Вернуться назад"))
+    return builder.as_markup(resize_keyboard=True, one_time_keyboard=False)
+
 async def get_support_menu() -> ReplyKeyboardMarkup:
     """
     Клавиатура для режима общения с техподдержкой.
