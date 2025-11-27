@@ -41,7 +41,7 @@ async def add_chat(chat_id: int) -> None:
                 await db.execute("INSERT OR IGNORE INTO users (chat_id) VALUES (?)", (chat_id,))
                 await db.commit()
 
-async def add_user(chat_id: str, contract_id: Optional[str] = None, password: Optional[str] = None, contract_title: Optional[str] = None) -> None:
+async def add_user(chat_id: str, contract_id: str, password: str, contract_title: Optional[str] = None) -> None:
     """
     Добавляет или обновляет пользователя в таблице.
     Совместимо со старыми версиями SQLite без ON CONFLICT.
@@ -79,6 +79,8 @@ async def get_user_by_chat_id(chat_id: int) -> Optional[dict]:
                 "contract_id": row[1],
                 "contract_title": row[2],
             }
+        else:
+            await add_chat(chat_id)
         return None
 
 async def get_contract_id_by_chat_id(chat_id: str) -> Optional[str]:
@@ -100,6 +102,24 @@ async def get_chat_id_by_contract_id(contract_id: str) -> Optional[str]:
             row = await cursor.fetchone()
             return row[0] if row else None
 
+
+async def get_chat_ids_by_contract_id(contract_id: str) -> List[str]:
+    """
+    Получает все chat_id по contract_id (теперь возвращает список, так как может быть несколько).
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT chat_id FROM users WHERE contract_id = ?", (contract_id,)) as cursor:
+            rows = await cursor.fetchall()
+            return [row[0] for row in rows] if rows else []
+
+
+async def logout_user(chat_id: int) -> None:
+    """
+    разлогинить пользователя по chat_id.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE users SET contract_id = "", contract_title = "", password = "" WHERE chat_id = ?", (chat_id,))
+        await db.commit()
 
 async def remove_user(chat_id: str) -> None:
     """

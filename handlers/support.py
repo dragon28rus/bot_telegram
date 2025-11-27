@@ -47,9 +47,12 @@ async def enter_support(message: Message):
     Вход в режим общения с техподдержкой.
     """
     user = await get_user_by_chat_id(message.chat.id)
-    contract_title = str(user.get("contract_title")) if user else "Не авторизованный пользователь"
+    if user and user.get("contract_title"):
+        contract_title = user.get("contract_title")
+    else:
+        contract_title = "Не авторизованный пользователь"
 
-    await start_session(message.chat.id, contract_title)
+    await start_session(message.chat.id, str(contract_title))
 
     logger.info(f"[SUPPORT] Пользователь {message.chat.id} ({message.from_user.full_name}) "
                 f"вошёл в поддержку. Договор: {contract_title}")

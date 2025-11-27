@@ -11,7 +11,7 @@ router = Router()
 async def get_user_balance(message: Message):
     chat_id = message.chat.id
     user = await get_user_by_chat_id(chat_id)
-
+    
     if not user or not user.get("contract_id"):
         await message.answer("❌ Сначала авторизуйтесь.", reply_markup=await get_main_menu(chat_id))
         return
