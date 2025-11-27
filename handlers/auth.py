@@ -129,7 +129,7 @@ async def process_password(message: Message, state: FSMContext):
             return
 
         # Сохраняем в БД (contract_id — как строка)
-        await add_user(chat_id, str(resolved_contract_id), resolved_contract_title)
+        await add_user(chat_id, str(resolved_contract_id), password, resolved_contract_title)
 
         logger.info(
             f"Авторизация успешна: chat_id={chat_id}, input='{contract_input}', resolved_contract_id={resolved_contract_id}, "

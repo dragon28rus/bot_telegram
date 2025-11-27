@@ -1,6 +1,6 @@
 import aiosqlite
 import os
-from typing import Optional, List, Tuple
+from typing import Optional, List
 from config import DB_PATH
 
 async def init_users_table() -> None:
@@ -17,8 +17,9 @@ async def init_users_table() -> None:
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id TEXT UNIQUE NOT NULL,
-                contract_id TEXT NOT NULL,
-                contract_title TEXT
+                contract_id TEXT,
+                contract_title TEXT,
+                password TEXT
             )
         """)
         # Индексы для быстрого поиска
@@ -26,7 +27,21 @@ async def init_users_table() -> None:
         await db.execute("CREATE INDEX IF NOT EXISTS idx_users_chat_id ON users (chat_id)")
         await db.commit()
 
-async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str] = None) -> None:
+async def add_chat(chat_id: int) -> None:
+    """
+    Добавляет новый чат в таблицу users.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        # Сначала проверим, есть ли такой пользователь
+        cursor = await db.execute("SELECT id FROM users WHERE chat_id = ?", (chat_id,))
+        row = await cursor.fetchone()
+
+        if not row:
+            async with aiosqlite.connect(DB_PATH) as db:
+                await db.execute("INSERT OR IGNORE INTO users (chat_id) VALUES (?)", (chat_id,))
+                await db.commit()
+
+async def add_user(chat_id: str, contract_id: Optional[str] = None, password: Optional[str] = None, contract_title: Optional[str] = None) -> None:
     """
     Добавляет или обновляет пользователя в таблице.
     Совместимо со старыми версиями SQLite без ON CONFLICT.
@@ -39,14 +54,14 @@ async def add_user(chat_id: str, contract_id: str, contract_title: Optional[str]
         if row:
             # Обновляем существующую запись
             await db.execute(
-                "UPDATE users SET contract_id = ?, contract_title = ? WHERE chat_id = ?",
-                (contract_id, contract_title, chat_id)
+                "UPDATE users SET contract_id = ?, contract_title = ?, password = ? WHERE chat_id = ?",
+                (contract_id, contract_title, password, chat_id)
             )
         else:
             # Вставляем новую запись
             await db.execute(
-                "INSERT INTO users (chat_id, contract_id, contract_title) VALUES (?, ?, ?)",
-                (chat_id, contract_id, contract_title)
+                "INSERT INTO users (chat_id, contract_id, contract_title, password) VALUES (?, ?, ?, ?)",
+                (chat_id, contract_id, contract_title, password)
             )
 
         await db.commit()

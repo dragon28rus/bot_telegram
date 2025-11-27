@@ -4,7 +4,7 @@ from aiogram.types import Message
 
 from keyboards.main_menu import get_main_menu
 from config import SUPPORT_CHAT_ID
-from db.users import get_user_by_chat_id
+from db.users import get_user_by_chat_id, add_chat
 from logger import logger
 
 router = Router()
@@ -29,6 +29,7 @@ async def cmd_start(message: Message):
             "Вы авторизованы как служба технической поддержки"
         )
     else:
+        await add_chat(chat_id)
         text = (
             "👋 Добро пожаловать!\n"
             "Для доступа к балансу, тарифам и новостям необходимо авторизоваться.\n\n"

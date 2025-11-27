@@ -1,4 +1,5 @@
 # handlers/payments_stub.py
+
 from aiogram import Router, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
@@ -12,8 +13,11 @@ from logger import logger
 
 router = Router()
 
+
 class PaymentState(StatesGroup):
+    """Состояния FSM для процесса оплаты."""
     waiting_for_amount = State()
+
 
 def get_cancel_keyboard() -> ReplyKeyboardMarkup:
     """
@@ -24,6 +28,7 @@ def get_cancel_keyboard() -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         one_time_keyboard=True
     )
+
 
 @router.message(F.text == "💵 Оплатить услуги")
 async def ask_amount(message: Message, state: FSMContext):
@@ -52,16 +57,19 @@ async def ask_amount(message: Message, state: FSMContext):
             reply_markup=get_cancel_keyboard()
         )
 
+
 @router.callback_query(F.data == "back_to_main")
 async def back_to_main(callback: CallbackQuery, state: FSMContext):
     """
     Отмена операции оплаты.
     """
-    user = await get_user_by_chat_id(callback.message.chat.id)
+    # Проверяем, что сообщение существует, иначе получаем chat_id из callback.from_user
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+    user = await get_user_by_chat_id(chat_id)
     contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
 
     logger.info(
-        f"[PAYMENTS] Пользователь {callback.from_user.full_name} (chat_id={callback.message.chat.id}) "
+        f"[PAYMENTS] Пользователь {callback.from_user.full_name} (chat_id={chat_id}) "
         f"с договором '{contract_title}' отменил оплату."
     )
 
@@ -73,11 +81,13 @@ async def back_to_main(callback: CallbackQuery, state: FSMContext):
     # редактируем сообщение с кнопками или шлём новое
     await callback.message.answer(
         "⬅️ Вы вернулись в главное меню.",
-        reply_markup=await get_main_menu(callback.message.chat.id)
+        reply_markup=await get_main_menu(chat_id)
     )
+
 
 @router.message(PaymentState.waiting_for_amount, F.text == "⬅️ Вернуться в главное меню")
 async def cancel_payment_text(message: Message, state: FSMContext):
+    """Обработка отмены через текстовую кнопку."""
     user = await get_user_by_chat_id(message.chat.id)
     contract_title = user.get("contract_title") if user else "Не авторизованный пользователь"
 
@@ -91,6 +101,7 @@ async def cancel_payment_text(message: Message, state: FSMContext):
         "⬅️ Вы вернулись в главное меню.",
         reply_markup=await get_main_menu(message.chat.id)
     )
+
 
 @router.message(PaymentState.waiting_for_amount, F.text.regexp(r"^\d+[.,]?\d*$"))
 async def process_amount(message: Message, state: FSMContext):
@@ -145,13 +156,16 @@ async def process_amount(message: Message, state: FSMContext):
 
     await state.clear()
 
+
 @router.message(PaymentState.waiting_for_amount)
 async def invalid_amount(message: Message, state: FSMContext):
     """
     Ловим любые некорректные ответы в состоянии ожидания суммы.
     """
-    await message.answer("❌ Введите корректную сумму (например: 200 или 1500.50) "
-                         "или нажмите «⬅️ Вернуться в главное меню».")
+    await message.answer(
+        "❌ Введите корректную сумму (например: 200 или 1500.50) "
+        "или нажмите «⬅️ Вернуться в главное меню»."
+    )
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
