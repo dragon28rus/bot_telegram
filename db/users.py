@@ -2,6 +2,7 @@ import aiosqlite
 import os
 from typing import Optional, List
 from config import DB_PATH
+from services.security import encrypt_password, decrypt_password
 
 async def init_users_table() -> None:
     """
@@ -46,6 +47,8 @@ async def add_user(chat_id: str, contract_id: str, password: str, contract_title
     Добавляет или обновляет пользователя в таблице.
     Совместимо со старыми версиями SQLite без ON CONFLICT.
     """
+    encrypted_password = encrypt_password(password)
+
     async with aiosqlite.connect(DB_PATH) as db:
         # Сначала проверим, есть ли такой пользователь
         cursor = await db.execute("SELECT id FROM users WHERE chat_id = ?", (chat_id,))
@@ -55,13 +58,13 @@ async def add_user(chat_id: str, contract_id: str, password: str, contract_title
             # Обновляем существующую запись
             await db.execute(
                 "UPDATE users SET contract_id = ?, contract_title = ?, password = ? WHERE chat_id = ?",
-                (contract_id, contract_title, password, chat_id)
+                (contract_id, contract_title, encrypted_password, chat_id)
             )
         else:
             # Вставляем новую запись
             await db.execute(
                 "INSERT INTO users (chat_id, contract_id, contract_title, password) VALUES (?, ?, ?, ?)",
-                (chat_id, contract_id, contract_title, password)
+                (chat_id, contract_id, contract_title, encrypted_password)
             )
 
         await db.commit()
@@ -118,8 +121,24 @@ async def logout_user(chat_id: int) -> None:
     разлогинить пользователя по chat_id.
     """
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("UPDATE users SET contract_id = "", contract_title = "", password = "" WHERE chat_id = ?", (chat_id,))
+        await db.execute(
+            "UPDATE users SET contract_id = NULL, contract_title = NULL, password = NULL WHERE chat_id = ?",
+            (chat_id,)
+        )
         await db.commit()
+
+
+async def get_user_password(chat_id: int) -> Optional[str]:
+    """
+    Возвращает расшифрованный пароль пользователя по chat_id.
+    Нужен для операций, где требуется пароль статистики при обращении к биллингу.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT password FROM users WHERE chat_id = ?", (chat_id,)) as cursor:
+            row = await cursor.fetchone()
+            if not row or row[0] is None:
+                return None
+            return decrypt_password(row[0])
 
 async def remove_user(chat_id: str) -> None:
     """

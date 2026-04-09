@@ -19,6 +19,7 @@ BILLING_API_TOKEN = os.getenv("BILLING_API_TOKEN")
 # --- Webhook ---
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
+BILLING_WEBHOOK_HOST = os.getenv("BILLING_WEBHOOK_HOST", "127.0.0.1")
 BILLING_WEBHOOK_PORT = int(os.getenv("BILLING_WEBHOOK_PORT", 8443))
 
 # --- Support ---
@@ -38,3 +39,10 @@ BILLING_PHONE = os.getenv("BILLING_PHONE", "")
 
 # Service-code магазина в сервисе ccassa
 PAYMENT_SHOP_ID = os.getenv("PAYMENT_SHOP_ID")
+
+# --- Security ---
+# Ключ для шифрования паролей абонентов в БД (Fernet, urlsafe base64, 32-byte key)
+PASSWORD_ENCRYPTION_KEY = os.getenv("PASSWORD_ENCRYPTION_KEY")
+
+# Окружение приложения (dev/stage/production)
+APP_ENV = os.getenv("APP_ENV", "dev")
