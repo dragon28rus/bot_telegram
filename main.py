@@ -5,7 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiohttp import web
 from aiohttp.web_middlewares import middleware
 
-from config import BOT_TOKEN, BILLING_WEBHOOK_HOST, BILLING_WEBHOOK_PORT, APP_ENV
+from config import BOT_TOKEN, BILLING_WEBHOOK_HOST, BILLING_WEBHOOK_PORT, APP_ENV, validate_env_config
 from logger import logger
 from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support, calls, payments_stub, limit
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
@@ -15,6 +15,9 @@ from keyboards import main_menu
 from services.security import validate_encryption_setup, is_production_env
 
 async def main():
+    # --- проверка обязательных env переменных ---
+    validate_env_config()
+
     # --- проверка security-конфига ---
     validate_encryption_setup(strict=is_production_env())
     logger.info(f"Security config checked. APP_ENV={APP_ENV}")

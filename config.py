@@ -46,3 +46,41 @@ PASSWORD_ENCRYPTION_KEY = os.getenv("PASSWORD_ENCRYPTION_KEY")
 
 # Окружение приложения (dev/stage/production)
 APP_ENV = os.getenv("APP_ENV", "dev")
+
+
+def _is_blank(value: str | None) -> bool:
+    return value is None or not str(value).strip()
+
+
+def validate_env_config() -> None:
+    """
+    Проверяет наличие обязательных переменных окружения.
+    Бросает RuntimeError с понятным списком отсутствующих переменных.
+    """
+    required = {
+        "BOT_TOKEN": os.getenv("BOT_TOKEN"),
+        "BGBILLING_API_URL": os.getenv("BGBILLING_API_URL"),
+        "BGBILLING_USER": os.getenv("BGBILLING_USER"),
+        "BGBILLING_PASSWORD": os.getenv("BGBILLING_PASSWORD"),
+        "PAYMENT_SHOP_ID": os.getenv("PAYMENT_SHOP_ID"),
+    }
+
+    missing = [name for name, value in required.items() if _is_blank(value)]
+
+    # SUPPORT_CHAT_ID формально имеет default=0, но для production-работы обычно обязателен.
+    support_chat_id_raw = os.getenv("SUPPORT_CHAT_ID")
+    if _is_blank(support_chat_id_raw):
+        missing.append("SUPPORT_CHAT_ID")
+
+    # Production-специфичные требования
+    if APP_ENV.lower() in {"production", "prod"}:
+        if _is_blank(os.getenv("BILLING_API_TOKEN")):
+            missing.append("BILLING_API_TOKEN")
+        if _is_blank(os.getenv("PASSWORD_ENCRYPTION_KEY")):
+            missing.append("PASSWORD_ENCRYPTION_KEY")
+
+    if missing:
+        raise RuntimeError(
+            "Отсутствуют обязательные переменные окружения: "
+            + ", ".join(sorted(set(missing)))
+        )
