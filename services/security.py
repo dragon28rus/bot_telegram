@@ -7,7 +7,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from config import PASSWORD_ENCRYPTION_KEY
 from logger import logger
 
-ENC_PREFIX = "enc:"
+ENC_PREFIX = "enc:v1:"
+LEGACY_ENC_PREFIX = "enc:"
 
 
 @lru_cache(maxsize=1)
@@ -73,6 +74,40 @@ def encrypt_password(plain_password: str) -> str:
     return f"{ENC_PREFIX}{token}"
 
 
+def _strip_known_prefix(stored_password: str) -> Optional[str]:
+    """
+    Возвращает token-часть, если строка имеет известный encryption-prefix.
+    """
+    if stored_password.startswith(ENC_PREFIX):
+        return stored_password[len(ENC_PREFIX):]
+    if stored_password.startswith(LEGACY_ENC_PREFIX):
+        return stored_password[len(LEGACY_ENC_PREFIX):]
+    return None
+
+
+def is_encrypted_password(stored_password: Optional[str]) -> bool:
+    """
+    Проверяет, является ли значение реально зашифрованным, а не просто строкой с префиксом.
+    Требует валидного ключа.
+    """
+    if not stored_password:
+        return False
+
+    token = _strip_known_prefix(stored_password)
+    if token is None:
+        return False
+
+    fernet = _get_fernet()
+    if not fernet:
+        return False
+
+    try:
+        fernet.decrypt(token.encode("utf-8"))
+        return True
+    except Exception:
+        return False
+
+
 def decrypt_password(stored_password: Optional[str]) -> str:
     """
     Расшифровывает пароль из БД.
@@ -81,10 +116,10 @@ def decrypt_password(stored_password: Optional[str]) -> str:
     if not stored_password:
         return ""
 
-    if not stored_password.startswith(ENC_PREFIX):
+    token = _strip_known_prefix(stored_password)
+    if token is None:
         return stored_password
 
-    token = stored_password[len(ENC_PREFIX):]
     fernet = _get_fernet()
     if not fernet:
         logger.error("Невозможно расшифровать пароль: PASSWORD_ENCRYPTION_KEY не задан")
@@ -93,8 +128,10 @@ def decrypt_password(stored_password: Optional[str]) -> str:
     try:
         return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
     except InvalidToken:
-        logger.error("Невозможно расшифровать пароль: invalid token/key mismatch")
-        return ""
+        # Если строка похожа на legacy prefix, но не является ciphertext,
+        # трактуем это как обычный plaintext-пароль (например: "enc:12345").
+        logger.warning("Строка с префиксом enc:* не является валидным ciphertext, трактуем как plaintext")
+        return stored_password
     except Exception as exc:
         logger.error(f"Ошибка расшифровки пароля: {exc}")
         return ""

@@ -243,7 +243,7 @@ python main.py
 После добавления `PASSWORD_ENCRYPTION_KEY` выполните одноразовую миграцию:
 
 ```bash
-python scripts/migrate_encrypt_passwords.py
+python -m scripts.migrate_encrypt_passwords
 ```
 
 ---

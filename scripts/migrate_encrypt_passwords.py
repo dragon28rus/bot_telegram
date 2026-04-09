@@ -5,15 +5,23 @@
 - сохраняет обратно в БД
 
 Запуск:
-    python scripts/migrate_encrypt_passwords.py
+    python -m scripts.migrate_encrypt_passwords
 """
 
 import asyncio
+import pathlib
+import sys
 
 import aiosqlite
 
+# Обеспечиваем импорт модулей проекта при запуске:
+# python -m scripts.migrate_encrypt_passwords
+ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from config import DB_PATH
-from services.security import ENC_PREFIX, encrypt_password, validate_encryption_setup
+from services.security import encrypt_password, is_encrypted_password, validate_encryption_setup
 
 
 async def migrate_passwords() -> None:
@@ -31,8 +39,8 @@ async def migrate_passwords() -> None:
                 skipped += 1
                 continue
 
-            # Уже зашифрованный пароль не трогаем
-            if str(password).startswith(ENC_PREFIX):
+            # Пропускаем только реально зашифрованные значения
+            if is_encrypted_password(str(password)):
                 skipped += 1
                 continue
 

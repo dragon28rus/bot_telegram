@@ -3,7 +3,7 @@ set -e
 
 if [ "${RUN_PASSWORD_MIGRATION_ON_START}" = "true" ]; then
   echo "Running password migration..."
-  python scripts/migrate_encrypt_passwords.py
+  python -m scripts.migrate_encrypt_passwords
 fi
 
 echo "Starting bot..."
