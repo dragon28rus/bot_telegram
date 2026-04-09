@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from typing import Optional
 
@@ -26,6 +27,37 @@ def _get_fernet() -> Optional[Fernet]:
     except Exception as exc:
         logger.error(f"Некорректный PASSWORD_ENCRYPTION_KEY: {exc}")
         return None
+
+
+def is_production_env() -> bool:
+    """
+    Проверяет, запущено ли приложение в production окружении.
+    Значения APP_ENV/ENVIRONMENT: production|prod.
+    """
+    env = (os.getenv("APP_ENV") or os.getenv("ENVIRONMENT") or "dev").strip().lower()
+    return env in {"production", "prod"}
+
+
+def validate_encryption_setup(strict: bool = False) -> bool:
+    """
+    Проверяет валидность конфигурации шифрования.
+
+    strict=True: если ключ отсутствует/некорректен — бросает ValueError.
+    """
+    fernet = _get_fernet()
+    if fernet:
+        return True
+
+    message = (
+        "PASSWORD_ENCRYPTION_KEY отсутствует или некорректен. "
+        "Шифрование паролей отключено."
+    )
+
+    if strict:
+        raise ValueError(message)
+
+    logger.warning(message)
+    return False
 
 
 def encrypt_password(plain_password: str) -> str:

@@ -221,6 +221,7 @@ SUPPORT_PHONE=+7XXXXXXXXXX
 BILLING_PHONE=+7YYYYYYYYYY
 PAYMENT_SHOP_ID=12345
 PASSWORD_ENCRYPTION_KEY=base64_fernet_key
+APP_ENV=dev
 
 LOG_LEVEL=INFO
 LOG_DIR=./logs
@@ -238,6 +239,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
+### Миграция ранее сохранённых plaintext-паролей
+После добавления `PASSWORD_ENCRYPTION_KEY` выполните одноразовую миграцию:
+
+```bash
+python scripts/migrate_encrypt_passwords.py
+```
+
 ---
 
 ## 10) Деплой
@@ -249,6 +257,7 @@ python main.py
   - TLS с валидным сертификатом;
   - ограничение доступа к billing-webhook endpoint по IP и Bearer-токену.
   - хранение `PASSWORD_ENCRYPTION_KEY` в секрет-хранилище (не в git).
+  - `APP_ENV=production`: бот не стартует без валидного `PASSWORD_ENCRYPTION_KEY`.
 
 ---
 
