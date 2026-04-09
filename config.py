@@ -38,3 +38,7 @@ BILLING_PHONE = os.getenv("BILLING_PHONE", "")
 
 # Service-code магазина в сервисе ccassa
 PAYMENT_SHOP_ID = os.getenv("PAYMENT_SHOP_ID")
+
+# --- Security ---
+# Ключ для шифрования паролей абонентов в БД (Fernet, urlsafe base64, 32-byte key)
+PASSWORD_ENCRYPTION_KEY = os.getenv("PASSWORD_ENCRYPTION_KEY")
