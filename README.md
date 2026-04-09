@@ -169,9 +169,9 @@ bot_telegram/
    - В `config.py` есть `BILLING_API_TOKEN`, но в `webhooks/billing.py` нет проверки `Authorization`.
    - Нужно добавить middleware/проверку заголовка Bearer-токена.
 
-2. **Хранение пароля в открытом виде в SQLite**
-   - Сейчас пароль сохраняется в `users.password`.
-   - Желательно уйти от хранения пароля (или зашифровать, если это технически необходимо).
+2. **Безопасность хранения пароля**
+   - Для сценариев, где пароль нужен при повторных запросах в биллинг, хранить только в шифрованном виде.
+   - Рекомендуемый вариант: симметричное шифрование (Fernet/AES-GCM) с ключом из окружения/secret-store.
 
 3. **Отключена SSL-проверка (`ssl=False`) во всех запросах aiohttp**
    - Хорошо для self-signed в тесте, но риск в проде.
@@ -220,6 +220,8 @@ ADMIN_CHAT_IDS=111111111,222222222
 SUPPORT_PHONE=+7XXXXXXXXXX
 BILLING_PHONE=+7YYYYYYYYYY
 PAYMENT_SHOP_ID=12345
+PASSWORD_ENCRYPTION_KEY=base64_fernet_key
+APP_ENV=dev
 
 LOG_LEVEL=INFO
 LOG_DIR=./logs
@@ -237,6 +239,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
+### Миграция ранее сохранённых plaintext-паролей
+После добавления `PASSWORD_ENCRYPTION_KEY` выполните одноразовую миграцию:
+
+```bash
+python scripts/migrate_encrypt_passwords.py
+```
+
 ---
 
 ## 10) Деплой
@@ -247,6 +256,8 @@ python main.py
   - reverse proxy (nginx);
   - TLS с валидным сертификатом;
   - ограничение доступа к billing-webhook endpoint по IP и Bearer-токену.
+  - хранение `PASSWORD_ENCRYPTION_KEY` в секрет-хранилище (не в git).
+  - `APP_ENV=production`: бот не стартует без валидного `PASSWORD_ENCRYPTION_KEY`.
 
 ---
 
@@ -254,4 +265,3 @@ python main.py
 Детальное ТЗ находится в файле:
 
 - `docs/technical_spec_other_messenger.md`
-

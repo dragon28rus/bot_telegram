@@ -5,15 +5,20 @@ from aiogram.client.default import DefaultBotProperties
 from aiohttp import web
 from aiohttp.web_middlewares import middleware
 
-from config import BOT_TOKEN, BILLING_WEBHOOK_PORT
+from config import BOT_TOKEN, BILLING_WEBHOOK_PORT, APP_ENV
 from logger import logger
 from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support, calls, payments_stub, limit
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
 from db.support import init_support_table
 from keyboards import main_menu
+from services.security import validate_encryption_setup, is_production_env
 
 async def main():
+    # --- проверка security-конфига ---
+    validate_encryption_setup(strict=is_production_env())
+    logger.info(f"Security config checked. APP_ENV={APP_ENV}")
+
     # --- инициализация базы данных ---
     await init_users_table()
     await init_support_table()
