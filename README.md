@@ -248,7 +248,34 @@ python scripts/migrate_encrypt_passwords.py
 
 ---
 
-## 10) Деплой
+## 10) Docker / Docker Compose
+
+### Сборка и запуск
+
+```bash
+docker compose up -d --build
+```
+
+### Остановка
+
+```bash
+docker compose down
+```
+
+### Важные переменные для контейнера
+- `APP_ENV=production` — включает strict-проверку шифрования при старте.
+- `PASSWORD_ENCRYPTION_KEY=...` — ключ шифрования паролей (обязателен для production).
+- `BILLING_WEBHOOK_HOST=0.0.0.0` — обязательно для приёма webhook извне контейнера.
+- `BILLING_WEBHOOK_PORT=8443` — порт aiohttp-сервера (пробрасывается в compose).
+- `TZ=Etc/UTC` (или `Europe/Moscow`) — таймзона контейнера/логов.
+- `RUN_PASSWORD_MIGRATION_ON_START=true` — одноразово прогоняет миграцию plaintext-паролей перед запуском бота.
+
+> Рекомендуется включать `RUN_PASSWORD_MIGRATION_ON_START=true` только на первый старт после выкладки ключа.
+> В compose дополнительно проброшены `/etc/localtime` и `/etc/timezone` в read-only для согласования времени контейнера с хостом.
+
+---
+
+## 11) Деплой
 - Базовый автоматический деплой: `deploy.sh`.
 - Пример nginx: `nginx/cable_bot.conf`.
 - Для production рекомендуется:
@@ -261,7 +288,7 @@ python scripts/migrate_encrypt_passwords.py
 
 ---
 
-## 11) Документ для портирования в другой мессенджер
+## 12) Документ для портирования в другой мессенджер
 Детальное ТЗ находится в файле:
 
 - `docs/technical_spec_other_messenger.md`

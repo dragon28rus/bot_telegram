@@ -5,7 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiohttp import web
 from aiohttp.web_middlewares import middleware
 
-from config import BOT_TOKEN, BILLING_WEBHOOK_PORT, APP_ENV
+from config import BOT_TOKEN, BILLING_WEBHOOK_HOST, BILLING_WEBHOOK_PORT, APP_ENV
 from logger import logger
 from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support, calls, payments_stub, limit
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
@@ -63,7 +63,7 @@ async def main():
     # Запускаем бота и вебсервер параллельно
     await asyncio.gather(
         dp.start_polling(bot),
-        web._run_app(app, host="127.0.0.1", port=BILLING_WEBHOOK_PORT)
+        web._run_app(app, host=BILLING_WEBHOOK_HOST, port=BILLING_WEBHOOK_PORT)
     )
 
     @middleware
