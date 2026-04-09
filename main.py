@@ -5,15 +5,23 @@ from aiogram.client.default import DefaultBotProperties
 from aiohttp import web
 from aiohttp.web_middlewares import middleware
 
-from config import BOT_TOKEN, BILLING_WEBHOOK_PORT
+from config import BOT_TOKEN, BILLING_WEBHOOK_HOST, BILLING_WEBHOOK_PORT, APP_ENV, validate_env_config
 from logger import logger
 from handlers import admin, start, auth, unlink, balance, news, tariff, payments, support, calls, payments_stub, limit
 from webhooks.billing import handle_billing_notification, handle_broadcast_notification
 from db.users import init_users_table
 from db.support import init_support_table
 from keyboards import main_menu
+from services.security import validate_encryption_setup, is_production_env
 
 async def main():
+    # --- проверка обязательных env переменных ---
+    validate_env_config()
+
+    # --- проверка security-конфига ---
+    validate_encryption_setup(strict=is_production_env())
+    logger.info(f"Security config checked. APP_ENV={APP_ENV}")
+
     # --- инициализация базы данных ---
     await init_users_table()
     await init_support_table()
@@ -58,7 +66,7 @@ async def main():
     # Запускаем бота и вебсервер параллельно
     await asyncio.gather(
         dp.start_polling(bot),
-        web._run_app(app, host="127.0.0.1", port=BILLING_WEBHOOK_PORT)
+        web._run_app(app, host=BILLING_WEBHOOK_HOST, port=BILLING_WEBHOOK_PORT)
     )
 
     @middleware

@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cable_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # В production задайте APP_ENV=production и валидный PASSWORD_ENCRYPTION_KEY
+      APP_ENV: ${APP_ENV:-dev}
+      TZ: ${TZ:-Etc/UTC}
+      BILLING_WEBHOOK_HOST: ${BILLING_WEBHOOK_HOST:-0.0.0.0}
+      BILLING_WEBHOOK_PORT: ${BILLING_WEBHOOK_PORT:-8443}
+      RUN_PASSWORD_MIGRATION_ON_START: ${RUN_PASSWORD_MIGRATION_ON_START:-false}
+    ports:
+      - "${BILLING_WEBHOOK_PORT:-8443}:${BILLING_WEBHOOK_PORT:-8443}"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
